@@ -19,10 +19,11 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        upsert("analyst", Role.ROLE_SOC_ANALYST);
-        upsert("ir",      Role.ROLE_INCIDENT_RESPONDER);
-        upsert("auditor", Role.ROLE_AUDITOR);
-        upsert("admin",   Role.ROLE_ADMIN);
+        upsert("analyst",   Role.ROLE_SOC_ANALYST);
+        upsert("ir",        Role.ROLE_INCIDENT_RESPONDER);
+        upsert("forensics", Role.ROLE_FORENSICS_ANALYST);
+        upsert("auditor",   Role.ROLE_AUDITOR);
+        upsert("admin",     Role.ROLE_ADMIN);
     }
 
     private void upsert(String username, Role role) {

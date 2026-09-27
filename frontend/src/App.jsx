@@ -14,6 +14,7 @@ import AnalystDashboard from './pages/AnalystDashboard'
 import AuditorDashboard from './pages/AuditorDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import IRDashboard from './pages/IRDashboard'
+import ForensicsDashboard from './pages/ForensicsDashboard'
 import { health as fetchHealth } from './lib/api'
 import { AuthContext, useAuth } from './lib/auth'
 
@@ -62,6 +63,7 @@ function Header({ health }) {
   let dashboardPath = '/';
   if (role === 'ROLE_SOC_ANALYST')             dashboardPath = '/analyst-dashboard';
   else if (role === 'ROLE_INCIDENT_RESPONDER') dashboardPath = '/ir-dashboard';
+  else if (role === 'ROLE_FORENSICS_ANALYST')  dashboardPath = '/forensics-dashboard';
   else if (role === 'ROLE_AUDITOR')            dashboardPath = '/auditor-dashboard';
   else if (role === 'ROLE_ADMIN')              dashboardPath = '/admin-dashboard';
 
@@ -95,6 +97,13 @@ function Header({ health }) {
               </NavLink>
               <NavLink to="/investigations" active={pathname.startsWith('/investigations')}>
                 All Investigations
+              </NavLink>
+            </nav>
+          )}
+          {token && role === 'ROLE_FORENSICS_ANALYST' && (
+            <nav className="hidden sm:flex gap-1 text-[14px]">
+              <NavLink to="/forensics-dashboard" active={pathname === '/forensics-dashboard'}>
+                Forensic Evidence
               </NavLink>
             </nav>
           )}
@@ -261,6 +270,7 @@ export default function App() {
     if (!token) return <Navigate to="/login" replace />
     if (role === 'ROLE_SOC_ANALYST')             return <Navigate to="/analyst-dashboard" replace />
     if (role === 'ROLE_INCIDENT_RESPONDER')      return <Navigate to="/ir-dashboard" replace />
+    if (role === 'ROLE_FORENSICS_ANALYST')       return <Navigate to="/forensics-dashboard" replace />
     if (role === 'ROLE_AUDITOR')                 return <Navigate to="/auditor-dashboard" replace />
     if (role === 'ROLE_ADMIN')                   return <Navigate to="/admin-dashboard" replace />
     return <Navigate to="/login" replace />
@@ -298,18 +308,20 @@ export default function App() {
                     <AnalysisJob />
                   </ProtectedRoute>
                 } />
+                {/* Report overview — Analyst + Forensics + Auditor (NOT IR — separation of duties) */}
                 <Route path="/report/:id" element={
-                  <ProtectedRoute allowedRoles={['ROLE_SOC_ANALYST', 'ROLE_INCIDENT_RESPONDER', 'ROLE_AUDITOR']}>
+                  <ProtectedRoute allowedRoles={['ROLE_SOC_ANALYST', 'ROLE_FORENSICS_ANALYST', 'ROLE_AUDITOR']}>
                     <Dashboard />
                   </ProtectedRoute>
                 } />
+                {/* Hex dump / session detail — Analyst (triage) + Forensics ONLY. IR is DENIED. */}
                 <Route path="/report/:id/sessions/:stream" element={
-                  <ProtectedRoute allowedRoles={['ROLE_SOC_ANALYST', 'ROLE_INCIDENT_RESPONDER', 'ROLE_AUDITOR']}>
+                  <ProtectedRoute allowedRoles={['ROLE_SOC_ANALYST', 'ROLE_FORENSICS_ANALYST']}>
                     <SessionDetail />
                   </ProtectedRoute>
                 } />
                 <Route path="/report/:id/export" element={
-                  <ProtectedRoute allowedRoles={['ROLE_SOC_ANALYST', 'ROLE_INCIDENT_RESPONDER', 'ROLE_AUDITOR']}>
+                  <ProtectedRoute allowedRoles={['ROLE_SOC_ANALYST', 'ROLE_FORENSICS_ANALYST', 'ROLE_AUDITOR']}>
                     <ExportPage />
                   </ProtectedRoute>
                 } />
@@ -318,6 +330,13 @@ export default function App() {
                 <Route path="/ir-dashboard" element={
                   <ProtectedRoute allowedRoles={['ROLE_INCIDENT_RESPONDER']}>
                     <IRDashboard />
+                  </ProtectedRoute>
+                } />
+
+                {/* ROLE_FORENSICS_ANALYST Routes */}
+                <Route path="/forensics-dashboard" element={
+                  <ProtectedRoute allowedRoles={['ROLE_FORENSICS_ANALYST']}>
+                    <ForensicsDashboard />
                   </ProtectedRoute>
                 } />
 

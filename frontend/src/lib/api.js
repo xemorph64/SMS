@@ -242,3 +242,28 @@ export const compareRuns = async (id, before, after) => json(await fetchWithAuth
 export const saveRemediation = async (id, key, status, note = '') => json(await fetchWithAuth(`/api/investigations/${id}/remediation`, {
   method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, status, note }),
 }))
+
+// ─── Findings Status API (DB-backed, replaces localStorage) ──────────────────
+export const getAllFindingsStatuses = async () =>
+  json(await fetchWithAuth('/api/findings'))
+
+export const getFindingsStatusesForCapture = async (captureId) =>
+  json(await fetchWithAuth(`/api/findings/${captureId}`))
+
+export const updateFindingStatus = async (captureId, streamId, status) =>
+  json(await fetchWithAuth(`/api/findings/${captureId}/${streamId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  }))
+
+// ─── Custody Log API (ISO 27037 chain-of-custody) ────────────────────────────
+export const logCustodyAction = async (captureId, streamId, action, notes = '') =>
+  json(await fetchWithAuth(`/api/findings/${captureId}/${streamId}/custody`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, notes }),
+  }))
+
+export const getCustodyLog = async (captureId, streamId) =>
+  json(await fetchWithAuth(`/api/findings/${captureId}/${streamId}/custody`))
