@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Download, FileText, CheckCircle, ShieldCheck, Activity, Target, Search, ClipboardCheck, XCircle, RotateCcw } from 'lucide-react';
-import { listCaptures, getCapture, adaptBackendCapture, getAllFindingsStatuses, updateFindingStatus } from '../lib/api';
+import { listCaptures, getCapture, adaptBackendCapture, getAllFindingsStatuses, updateFindingStatus, updateForensicsStatus } from '../lib/api';
 import { Spinner, Notice, GradeBadge, SeverityPill } from '../components/ui';
 
 export default function AuditorDashboard() {
@@ -51,8 +51,8 @@ export default function AuditorDashboard() {
             allSessionsList.push({ captureId: c.id, captureName: c.filename, ...s });
 
             // Build awaiting audit list from DB statuses
-            const st = statusMap[key]?.status;
-            if (st === 'AWAITING_AUDIT') {
+            const st = statusMap[key];
+            if (st?.irStatus === 'REMEDIATED' && st?.forensicsStatus === 'REPORT_SUBMITTED') {
               awaitingList.push({
                 key,
                 captureId:   c.id,
@@ -348,7 +348,7 @@ function AuditVerificationQueue() {
   }, []);
 
   async function decide(inc, decision) {
-    await updateFindingStatus(inc.captureId, inc.stream, decision);
+    await updateFindingStatus(inc.captureId, inc.stream, decision); await updateForensicsStatus(inc.captureId, inc.stream, decision);;
     setItems(prev => prev.filter(i => i.key !== inc.key));
   }
 
@@ -420,3 +420,5 @@ function AuditVerificationQueue() {
     </div>
   );
 }
+
+

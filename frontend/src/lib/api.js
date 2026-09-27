@@ -250,11 +250,18 @@ export const getAllFindingsStatuses = async () =>
 export const getFindingsStatusesForCapture = async (captureId) =>
   json(await fetchWithAuth(`/api/findings/${captureId}`))
 
-export const updateFindingStatus = async (captureId, streamId, status) =>
+export const updateFindingStatus = async (captureId, streamId, irStatus) =>
   json(await fetchWithAuth(`/api/findings/${captureId}/${streamId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ irStatus }),
+  }))
+
+export const updateForensicsStatus = async (captureId, streamId, forensicsStatus) =>
+  json(await fetchWithAuth(`/api/findings/${captureId}/${streamId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ forensicsStatus }),
   }))
 
 // ─── Custody Log API (ISO 27037 chain-of-custody) ────────────────────────────

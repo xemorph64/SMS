@@ -44,9 +44,11 @@ public class FindingsController {
             @RequestBody Map<String, String> body,
             Authentication auth) {
 
-        String newStatus = body.get("status");
-        if (newStatus == null || newStatus.isBlank()) {
-            return ResponseEntity.badRequest().body("status field required");
+        String newIrStatus = body.get("irStatus");
+        String newForensicsStatus = body.get("forensicsStatus");
+
+        if (newIrStatus == null && newForensicsStatus == null) {
+            return ResponseEntity.badRequest().body("irStatus or forensicsStatus required");
         }
 
         String username = auth != null ? auth.getName() : "system";
@@ -57,26 +59,30 @@ public class FindingsController {
                     FindingsStatus n = new FindingsStatus();
                     n.setCaptureId(captureId);
                     n.setStreamId(streamId);
+                    n.setNoticedAt(Instant.now());
                     return n;
                 });
 
-        fs.setStatus(newStatus);
+        if (newIrStatus != null) {
+            fs.setIrStatus(newIrStatus);
+            // Auto-log the status change in custody log
+            custodyRepo.save(new CustodyLog(captureId, streamId, "IR_STATUS_" + newIrStatus, username, "IR Status updated to " + newIrStatus));
+        }
+        
+        if (newForensicsStatus != null) {
+            fs.setForensicsStatus(newForensicsStatus);
+            // Auto-log the status change in custody log
+            custodyRepo.save(new CustodyLog(captureId, streamId, "FORENSICS_STATUS_" + newForensicsStatus, username, "Forensics Status updated to " + newForensicsStatus));
+        }
+
         fs.setUpdatedBy(username);
         fs.setUpdatedAt(Instant.now());
-        if ("ESCALATED".equals(newStatus) && fs.getEscalatedAt() == null) {
-            fs.setEscalatedAt(Instant.now());
+        
+        if (fs.getNoticedAt() == null) {
+            fs.setNoticedAt(Instant.now());
         }
 
         statusRepo.save(fs);
-
-        // Auto-log the status change in custody log
-        custodyRepo.save(new CustodyLog(
-                captureId, streamId,
-                "STATUS_CHANGED_TO_" + newStatus,
-                username,
-                "Status updated to " + newStatus
-        ));
-
         return ResponseEntity.ok(fs);
     }
 

@@ -6,10 +6,10 @@ import { useAuth } from '../lib/auth'
 
 // Status machine for IR workflow (REMEDIATED and beyond hand off to Forensics)
 const STATUS_FLOW = {
-  ESCALATED:        { label: 'Escalated by SOC',      color: 'bg-crit/10 text-crit border-crit/30',       next: 'IR_INVESTIGATING', nextLabel: 'Start Investigation'   },
+  ESCALATED:        { label: 'Noticed / Escalated',      color: 'bg-crit/10 text-crit border-crit/30',       next: 'IR_INVESTIGATING', nextLabel: 'Start Investigation'   },
   IR_INVESTIGATING: { label: 'Under Investigation',   color: 'bg-warn/10 text-warn border-warn/30',       next: 'CONTAINED',        nextLabel: 'Mark Contained'        },
   CONTAINED:        { label: 'Threat Contained',      color: 'bg-med/10 text-med border-med/30',          next: 'REMEDIATED',       nextLabel: 'Mark Remediated'       },
-  REMEDIATED:       { label: 'Awaiting Forensics',    color: 'bg-ok/10 text-ok border-ok/30',             next: null,               nextLabel: null                    },
+  REMEDIATED:       { label: 'Awaiting Audit',    color: 'bg-ok/10 text-ok border-ok/30',             next: null,               nextLabel: null                    },
   FORENSIC_ANALYSIS:{ label: 'Under Forensic Analysis',color:'bg-accent/10 text-accent border-accent/30', next: null,               nextLabel: null                    },
   AWAITING_AUDIT:   { label: 'Awaiting Audit',        color: 'bg-accent/10 text-accent border-accent/30', next: null,               nextLabel: null                    },
   VERIFIED:         { label: 'Verified & Closed',     color: 'bg-ok/10 text-ok border-ok/30',             next: null,               nextLabel: null                    },
@@ -17,20 +17,20 @@ const STATUS_FLOW = {
 }
 
 // CERT-In 6-hour countdown timer component
-function CertInTimer({ escalatedAt }) {
+function CertInTimer({ noticedAt }) {
   const [remaining, setRemaining] = useState(null)
 
   useEffect(() => {
-    if (!escalatedAt) return
+    if (!noticedAt) return
     const tick = () => {
-      const elapsed = (Date.now() - new Date(escalatedAt).getTime()) / 1000
+      const elapsed = (Date.now() - new Date(noticedAt).getTime()) / 1000
       const rem = Math.max(0, 6 * 3600 - elapsed)
       setRemaining(rem)
     }
     tick()
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
-  }, [escalatedAt])
+  }, [noticedAt])
 
   if (remaining === null) return null
 
@@ -119,14 +119,14 @@ export default function IRDashboard() {
     setStatuses(prev => ({ ...prev, [inc.key]: updated }))
   }
 
-  const getStatus = (inc) => inc.statusObj?.status || 'ESCALATED'
+  const getStatus = (inc) => inc.statusObj?.irStatus || inc.statusObj?.status || 'ESCALATED'
 
   // IR only sees incidents NOT yet handed to Forensics/Audit
   const irIncidents = incidents.filter(i =>
-    !['FORENSIC_ANALYSIS','AWAITING_AUDIT','VERIFIED'].includes(getStatus(i))
+    !['REMEDIATED','VERIFIED'].includes(getStatus(i))
   )
   const handedOff = incidents.filter(i =>
-    ['FORENSIC_ANALYSIS','AWAITING_AUDIT','VERIFIED'].includes(getStatus(i))
+    ['REMEDIATED','VERIFIED'].includes(getStatus(i))
   )
 
   if (loading) return (
@@ -165,7 +165,7 @@ export default function IRDashboard() {
           <p className="font-medium text-ink">Separation of Duties Enforced (NIST AC-5)</p>
           <p className="text-ink-3 text-xs mt-0.5">
             You do <strong>not</strong> have access to raw packet evidence or hex dumps.
-            Once you mark an incident as Remediated, it transfers to the Digital Forensics Analyst.
+            Forensics operates in parallel for evidence preservation.
           </p>
         </div>
       </div>
@@ -206,8 +206,8 @@ export default function IRDashboard() {
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     {/* CERT-In timer for escalated incidents */}
-                    {isEscalated && inc.statusObj?.escalatedAt && (
-                      <CertInTimer escalatedAt={inc.statusObj.escalatedAt} />
+                    {isEscalated && inc.statusObj?.noticedAt && (
+                      <CertInTimer noticedAt={inc.statusObj.noticedAt} />
                     )}
                     <span className={`text-xs px-2 py-0.5 rounded border font-medium ${stInfo.color}`}>
                       {stInfo.label}
@@ -265,7 +265,7 @@ export default function IRDashboard() {
       {handedOff.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-sm font-semibold text-ink-2 uppercase tracking-wide">
-            Handed to Forensics / Audit ({handedOff.length})
+            Remediated / Handed to Audit ({handedOff.length})
           </h2>
           {handedOff.map(inc => {
             const st     = getStatus(inc)
@@ -287,3 +287,4 @@ export default function IRDashboard() {
     </div>
   )
 }
+

@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ShieldCheck, FileSearch, Clock, CheckCircle, FileLock2, BookOpen, ChevronRight, Download } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { listCaptures, adaptBackendCapture, getAllFindingsStatuses, updateFindingStatus, logCustodyAction, getCustodyLog } from '../lib/api'
+import { listCaptures, adaptBackendCapture, getAllFindingsStatuses, updateForensicsStatus, logCustodyAction, getCustodyLog } from '../lib/api'
 import { useAuth } from '../lib/auth'
 
 const STATUS_LABEL = {
-  REMEDIATED:        { label: 'Awaiting Forensic Analysis', color: 'bg-warn/10 text-warn border-warn/30' },
+  ESCALATED:         { label: 'Awaiting Forensic Analysis', color: 'bg-warn/10 text-warn border-warn/30' },
   FORENSIC_ANALYSIS: { label: 'Under Forensic Analysis',   color: 'bg-accent/10 text-accent border-accent/30' },
-  AWAITING_AUDIT:    { label: 'Submitted for Audit',        color: 'bg-ok/10 text-ok border-ok/30' },
+  REPORT_SUBMITTED:  { label: 'Submitted for Audit',        color: 'bg-ok/10 text-ok border-ok/30' },
   VERIFIED:          { label: 'Verified & Closed',          color: 'bg-ok/10 text-ok border-ok/30' },
 }
 
@@ -58,9 +58,9 @@ export default function ForensicsDashboard() {
     (cap.sessions || [])
       .filter(s => {
         const key = `${cap.id}-${s.tcp_stream}`
-        const st  = statuses[key]?.status
+        const st  = statuses[key]?.forensicsStatus || statuses[key]?.status
         console.log(`[ForensicsDashboard] Checking ${key}: status=${st}`)
-        return ['REMEDIATED', 'FORENSIC_ANALYSIS', 'AWAITING_AUDIT'].includes(st)
+        return !['REPORT_SUBMITTED', 'VERIFIED'].includes(st)
       })
       .map(s => ({
         captureId:   cap.id,
@@ -77,7 +77,7 @@ export default function ForensicsDashboard() {
   console.log(`[ForensicsDashboard] Filtered incidents:`, forensicIncidents)
 
   async function advanceStatus(inc, nextStatus) {
-    const updated = await updateFindingStatus(inc.captureId, inc.stream, nextStatus)
+    const updated = await updateForensicsStatus(inc.captureId, inc.stream, nextStatus)
     setStatuses(prev => ({ ...prev, [inc.key]: updated }))
   }
 
@@ -216,7 +216,7 @@ export default function ForensicsDashboard() {
 
                     {/* Status advance buttons */}
                     <div className="flex items-center gap-3">
-                      {st === 'REMEDIATED' && (
+                      {st === 'ESCALATED' && (
                         <button
                           onClick={() => advanceStatus(inc, 'FORENSIC_ANALYSIS')}
                           className="bg-accent text-surface px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90"
@@ -226,7 +226,7 @@ export default function ForensicsDashboard() {
                       )}
                       {st === 'FORENSIC_ANALYSIS' && (
                         <button
-                          onClick={() => advanceStatus(inc, 'AWAITING_AUDIT')}
+                          onClick={() => advanceStatus(inc, 'REPORT_SUBMITTED')}
                           className="bg-ok text-surface px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90"
                         >
                           Submit Forensic Report for Audit
@@ -269,3 +269,5 @@ export default function ForensicsDashboard() {
     </div>
   )
 }
+
+

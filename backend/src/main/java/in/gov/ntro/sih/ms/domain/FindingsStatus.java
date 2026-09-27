@@ -20,8 +20,20 @@ public class FindingsStatus {
     @Column(nullable = false)
     private String status = "NEW";
 
+    @Column(name = "ir_status")
+    private String irStatus = "ESCALATED";
+
+    @Column(name = "forensics_status")
+    private String forensicsStatus = "ESCALATED";
+
     @Column(name = "escalated_at")
     private Instant escalatedAt;
+
+    @Column(name = "noticed_at")
+    private Instant noticedAt;
+
+    @Column(name = "certin_reported_at")
+    private Instant certinReportedAt;
 
     @Column(name = "updated_by")
     private String updatedBy;
@@ -31,13 +43,16 @@ public class FindingsStatus {
 
     public FindingsStatus() {}
 
-    public FindingsStatus(Long captureId, String streamId, String status, String updatedBy) {
+    public FindingsStatus(Long captureId, String streamId, String irStatus, String forensicsStatus, String updatedBy) {
         this.captureId = captureId;
         this.streamId = streamId;
-        this.status = status;
+        this.status = irStatus; // legacy fallback
+        this.irStatus = irStatus;
+        this.forensicsStatus = forensicsStatus;
         this.updatedBy = updatedBy;
         this.updatedAt = Instant.now();
-        if ("ESCALATED".equals(status)) this.escalatedAt = Instant.now();
+        this.noticedAt = Instant.now();
+        this.escalatedAt = Instant.now();
     }
 
     // Getters & Setters
@@ -46,8 +61,22 @@ public class FindingsStatus {
     public String getStreamId() { return streamId; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    
+    public String getIrStatus() { return irStatus; }
+    public void setIrStatus(String irStatus) { this.irStatus = irStatus; }
+    
+    public String getForensicsStatus() { return forensicsStatus; }
+    public void setForensicsStatus(String forensicsStatus) { this.forensicsStatus = forensicsStatus; }
+
     public Instant getEscalatedAt() { return escalatedAt; }
     public void setEscalatedAt(Instant escalatedAt) { this.escalatedAt = escalatedAt; }
+
+    public Instant getNoticedAt() { return noticedAt; }
+    public void setNoticedAt(Instant noticedAt) { this.noticedAt = noticedAt; }
+
+    public Instant getCertinReportedAt() { return certinReportedAt; }
+    public void setCertinReportedAt(Instant certinReportedAt) { this.certinReportedAt = certinReportedAt; }
+
     public String getUpdatedBy() { return updatedBy; }
     public void setUpdatedBy(String updatedBy) { this.updatedBy = updatedBy; }
     public Instant getUpdatedAt() { return updatedAt; }
