@@ -2,32 +2,31 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Download, FileText, CheckCircle, ShieldCheck, Activity, Target, Search, ClipboardCheck, XCircle, RotateCcw } from 'lucide-react';
-import { listCaptures, getCapture, adaptBackendCapture } from '../lib/api';
+import { listCaptures, getCapture, adaptBackendCapture, getAllFindingsStatuses, updateFindingStatus } from '../lib/api';
 import { Spinner, Notice, GradeBadge, SeverityPill } from '../components/ui';
-
-// Read IR statuses from localStorage (shared with IRDashboard)
-function getIRStatuses() {
-  try { return JSON.parse(localStorage.getItem('sms-ir-statuses') || '{}') } catch { return {} }
-}
-function saveIRStatuses(s) {
-  try { localStorage.setItem('sms-ir-statuses', JSON.stringify(s)) } catch {}
-}
-
 
 export default function AuditorDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [irStatuses, setIrStatuses] = useState(getIRStatuses);
+  const [allStatuses, setAllStatuses] = useState([]);   // DB-backed
   const [awaitingAudit, setAwaitingAudit] = useState([]);
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
-        const capturesList = await listCaptures();
+        const [capturesList, dbStatuses] = await Promise.all([
+          listCaptures(),
+          getAllFindingsStatuses().catch(() => []),
+        ]);
         const successful = capturesList.filter(c => c.status === 'COMPLETED');
-        
+
+        // Build status map: key=`${captureId}-${streamId}` → status obj
+        const statusMap = {};
+        dbStatuses.forEach(s => { statusMap[`${s.captureId}-${s.streamId}`] = s; });
+        if (active) setAllStatuses(dbStatuses);
+
         let totalSessions = 0;
         let tlsVersions = { 'TLS 1.3': 0, 'TLS 1.2': 0, 'TLS 1.1': 0, 'TLS 1.0': 0, 'Cleartext': 0 };
         let ciphers = {};
@@ -37,22 +36,35 @@ export default function AuditorDashboard() {
         let pqcReadiness = 0;
         let pqcCount = 0;
         let allSessionsList = [];
-        
+        let awaitingList = [];
+
         for (const c of successful) {
           const detail = await getCapture(c.id);
           const r = detail.report;
           if (!r) continue;
-          
+
           if (r.overall_score !== undefined) scores.push(r.overall_score);
-          
+
           for (const s of (r.sessions || [])) {
             totalSessions++;
-            allSessionsList.push({
-              captureId: c.id,
-              captureName: c.filename,
-              ...s
-            });
-            
+            const key = `${c.id}-${s.tcp_stream}`;
+            allSessionsList.push({ captureId: c.id, captureName: c.filename, ...s });
+
+            // Build awaiting audit list from DB statuses
+            const st = statusMap[key]?.status;
+            if (st === 'AWAITING_AUDIT') {
+              awaitingList.push({
+                key,
+                captureId:   c.id,
+                captureFile: c.filename,
+                stream:      s.tcp_stream,
+                server:      s.server?.ip || s.server,
+                protocol:    s.protocol,
+                findings:    (s.findings || []).filter(f => ['critical','high'].includes(f.severity)),
+                statusObj:   statusMap[key],
+              });
+            }
+
             if (!s.tls_version) {
               tlsVersions['Cleartext']++;
               if (s.role === 'submission_access') rfc8314Pass = false;
@@ -60,25 +72,24 @@ export default function AuditorDashboard() {
               const v = `TLS ${s.tls_version}`;
               if (tlsVersions[v] !== undefined) tlsVersions[v]++;
               else tlsVersions[v] = 1;
-              
               if (['1.0', '1.1'].includes(s.tls_version)) nistPass = false;
             }
-            
+
             if (s.cipher_suite) {
               ciphers[s.cipher_suite] = (ciphers[s.cipher_suite] || 0) + 1;
               if (s.cipher_suite.includes('RC4') || s.cipher_suite.includes('DES')) nistPass = false;
             }
-            
+
             if (s.kex && (s.kex.includes('Kyber') || s.kex.includes('ML-KEM') || s.kex.includes('X25519MLKEM'))) {
               pqcCount++;
             }
           }
         }
-        
+
         const tlsData = Object.entries(tlsVersions)
           .filter(([_, count]) => count > 0)
           .map(([name, value]) => ({ name, value }));
-          
+
         const cipherData = Object.entries(ciphers)
           .map(([name, count]) => ({ name, count }))
           .sort((a, b) => b.count - a.count)
@@ -87,7 +98,10 @@ export default function AuditorDashboard() {
         const avgScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
         const pqcMetric = totalSessions > 0 ? Math.round((pqcCount / totalSessions) * 100) : 0;
 
-        if (active) setData({ tlsData, cipherData, avgScore, totalSessions, nistPass, rfc8314Pass, pqcMetric, allSessions: allSessionsList });
+        if (active) {
+          setData({ tlsData, cipherData, avgScore, totalSessions, nistPass, rfc8314Pass, pqcMetric, allSessions: allSessionsList });
+          setAwaitingAudit(awaitingList);
+        }
       } catch (e) {
         if (active) setError(e.message);
       } finally {
@@ -298,37 +312,44 @@ export default function AuditorDashboard() {
 }
 
 function AuditVerificationQueue() {
-  const [statuses, setStatuses] = useState(getIRStatuses);
+  const [items, setItems] = useState([]);
   const [captures, setCaptures] = useState([]);
 
   useEffect(() => {
-    listCaptures()
-      .then(list => list.filter(c => c.status === 'COMPLETED').map(adaptBackendCapture))
-      .then(setCaptures)
-      .catch(() => {})
+    async function load() {
+      const [capList, dbStatuses] = await Promise.all([
+        listCaptures().catch(() => []),
+        getAllFindingsStatuses().catch(() => []),
+      ]);
+      const adapted = capList
+        .filter(c => c.status === 'COMPLETED')
+        .map(adaptBackendCapture);
+      setCaptures(adapted);
+
+      const statusMap = {};
+      dbStatuses.forEach(s => { statusMap[`${s.captureId}-${s.streamId}`] = s; });
+
+      const awaiting = adapted.flatMap(cap =>
+        (cap.report?.sessions || [])
+          .filter(s => statusMap[`${cap.id}-${s.tcp_stream}`]?.status === 'AWAITING_AUDIT')
+          .map(s => ({
+            key:         `${cap.id}-${s.tcp_stream}`,
+            captureId:   cap.id,
+            captureFile: cap.report?.capture?.filename || 'Unknown',
+            stream:      s.tcp_stream,
+            server:      s.server?.ip || s.server,
+            protocol:    s.protocol,
+            findings:    (s.findings || []).filter(f => ['critical','high'].includes(f.severity)),
+          }))
+      );
+      setItems(awaiting);
+    }
+    load();
   }, []);
 
-  const awaitingItems = captures.flatMap(cap =>
-    (cap.report?.sessions || [])
-      .filter(s => {
-        const key = `${cap.id}-${s.tcp_stream}`;
-        return statuses[key] === 'AWAITING_AUDIT';
-      })
-      .map(s => ({
-        captureId: cap.id,
-        captureFile: cap.report?.capture?.filename || 'Unknown',
-        stream: s.tcp_stream,
-        server: s.server?.ip || s.server,
-        protocol: s.protocol,
-        findings: (s.findings || []).filter(f => ['critical','high'].includes(f.severity)),
-        key: `${cap.id}-${s.tcp_stream}`,
-      }))
-  );
-
-  function decide(key, decision) {
-    const updated = { ...statuses, [key]: decision };
-    setStatuses(updated);
-    saveIRStatuses(updated);
+  async function decide(inc, decision) {
+    await updateFindingStatus(inc.captureId, inc.stream, decision);
+    setItems(prev => prev.filter(i => i.key !== inc.key));
   }
 
   return (
@@ -337,24 +358,26 @@ function AuditVerificationQueue() {
         <ClipboardCheck size={18} className="text-accent" />
         <h3 className="font-display font-semibold text-ink">Audit Verification Queue</h3>
         <span className="ml-auto text-xs bg-accent/10 text-accent border border-accent/20 px-2 py-0.5 rounded-full font-medium">
-          {awaitingItems.length} Pending
+          {items.length} Pending
         </span>
       </div>
 
-      {awaitingItems.length === 0 ? (
+      {items.length === 0 ? (
         <div className="py-10 text-center text-ink-3 text-sm">
-          No incidents awaiting audit verification. IR team has not submitted any yet.
+          No incidents awaiting audit verification. Forensics team must submit reports first.
         </div>
       ) : (
         <div className="divide-y divide-line">
-          {awaitingItems.map(inc => (
+          {items.map(inc => (
             <div key={inc.key} className="p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-ink">{inc.server} · {inc.protocol}</p>
                   <p className="text-xs text-ink-3">{inc.captureFile} · Stream #{inc.stream} · {inc.findings.length} finding(s)</p>
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded border bg-accent/10 text-accent border-accent/30 font-medium">Submitted by IR</span>
+                <span className="text-xs px-2 py-0.5 rounded border bg-accent/10 text-accent border-accent/30 font-medium">
+                  Submitted by Forensics
+                </span>
               </div>
 
               <div className="text-sm text-ink-2 space-y-1">
@@ -373,17 +396,17 @@ function AuditVerificationQueue() {
                   to={`/report/${inc.captureId}/sessions/${inc.stream}`}
                   className="text-xs text-accent hover:underline"
                 >
-                  View Packet Evidence
+                  View Forensic Evidence
                 </Link>
                 <div className="flex gap-2 ml-auto">
                   <button
-                    onClick={() => decide(inc.key, 'REJECTED')}
+                    onClick={() => decide(inc, 'REJECTED')}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-crit/30 text-crit text-sm font-medium hover:bg-crit/10 transition-colors"
                   >
                     <XCircle size={13} /> Reject — Return to IR
                   </button>
                   <button
-                    onClick={() => decide(inc.key, 'VERIFIED')}
+                    onClick={() => decide(inc, 'VERIFIED')}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ok text-surface text-sm font-semibold hover:opacity-90 transition-opacity"
                   >
                     <CheckCircle size={13} /> Verify & Close Incident
