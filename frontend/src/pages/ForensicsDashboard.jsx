@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ShieldCheck, FileSearch, Clock, CheckCircle, FileLock2, BookOpen, ChevronRight, Download } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { listCaptures, adaptBackendCapture, getAllFindingsStatuses, updateForensicsStatus, logCustodyAction, getCustodyLog } from '../lib/api'
+import { listCaptures, getCapture, adaptBackendCapture, getAllFindingsStatuses, updateForensicsStatus, logCustodyAction, getCustodyLog } from '../lib/api'
 import { useAuth } from '../lib/auth'
 
 const STATUS_LABEL = {
@@ -145,7 +145,7 @@ export default function ForensicsDashboard() {
       {/* Evidence Queue */}
       {forensicIncidents.length === 0 ? (
         <div className="bg-surface border border-line rounded-xl p-12 text-center text-ink-3">
-          No incidents ready for forensic analysis. IR team must mark incidents as Remediated first.
+          No incidents ready for forensic analysis. Escalate an incident to begin parallel evidence preservation.
         </div>
       ) : (
         <div className="space-y-3">
@@ -269,5 +269,7 @@ export default function ForensicsDashboard() {
     </div>
   )
 }
+
+
 
 
