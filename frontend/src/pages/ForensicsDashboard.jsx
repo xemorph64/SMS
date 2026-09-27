@@ -55,7 +55,7 @@ export default function ForensicsDashboard() {
 
   // Incidents in REMEDIATED or FORENSIC_ANALYSIS states
   const forensicIncidents = captures.flatMap(cap =>
-    (cap.report?.sessions || [])
+    (cap.sessions || [])
       .filter(s => {
         const key = `${cap.id}-${s.tcp_stream}`
         const st  = statuses[key]?.status
@@ -63,7 +63,7 @@ export default function ForensicsDashboard() {
       })
       .map(s => ({
         captureId:   cap.id,
-        captureFile: cap.report?.capture?.filename || 'Unknown',
+        captureFile: cap.capture?.filename || 'Unknown',
         stream:      s.tcp_stream,
         server:      s.server?.ip || s.server,
         protocol:    s.protocol,

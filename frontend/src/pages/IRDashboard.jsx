@@ -95,13 +95,13 @@ export default function IRDashboard() {
 
   // All sessions with critical/high findings that are still IR's responsibility
   const incidents = captures.flatMap(cap =>
-    (cap.report?.sessions || [])
+    (cap.sessions || [])
       .filter(s => (s.findings || []).some(f => ['critical','high'].includes(f.severity)))
       .map(s => {
         const key = `${cap.id}-${s.tcp_stream}`
         return {
           captureId:   cap.id,
-          captureFile: cap.report?.capture?.filename || 'Unknown',
+          captureFile: cap.capture?.filename || 'Unknown',
           stream:      s.tcp_stream,
           server:      s.server?.ip || s.server,
           protocol:    s.protocol,

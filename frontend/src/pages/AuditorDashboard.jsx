@@ -330,12 +330,12 @@ function AuditVerificationQueue() {
       dbStatuses.forEach(s => { statusMap[`${s.captureId}-${s.streamId}`] = s; });
 
       const awaiting = adapted.flatMap(cap =>
-        (cap.report?.sessions || [])
+        (cap.sessions || [])
           .filter(s => statusMap[`${cap.id}-${s.tcp_stream}`]?.status === 'AWAITING_AUDIT')
           .map(s => ({
             key:         `${cap.id}-${s.tcp_stream}`,
             captureId:   cap.id,
-            captureFile: cap.report?.capture?.filename || 'Unknown',
+            captureFile: cap.capture?.filename || 'Unknown',
             stream:      s.tcp_stream,
             server:      s.server?.ip || s.server,
             protocol:    s.protocol,
