@@ -122,10 +122,10 @@ export default function ForensicsDashboard() {
         </div>
         <div className="flex gap-3 text-sm">
           <span className="px-3 py-1 rounded-full bg-warn/10 text-warn border border-warn/20 font-medium">
-            {forensicIncidents.filter(i => i.statusObj?.status === 'REMEDIATED').length} Awaiting Analysis
+            {forensicIncidents.filter(i => (i.statusObj?.forensicsStatus || i.statusObj?.status || 'ESCALATED') === 'ESCALATED').length} Awaiting Analysis
           </span>
           <span className="px-3 py-1 rounded-full bg-accent/10 text-accent border border-accent/20 font-medium">
-            {forensicIncidents.filter(i => i.statusObj?.status === 'FORENSIC_ANALYSIS').length} In Analysis
+            {forensicIncidents.filter(i => (i.statusObj?.forensicsStatus || i.statusObj?.status || 'ESCALATED') === 'FORENSIC_ANALYSIS').length} In Analysis
           </span>
         </div>
       </div>
@@ -150,8 +150,8 @@ export default function ForensicsDashboard() {
       ) : (
         <div className="space-y-3">
           {forensicIncidents.map(inc => {
-            const st      = inc.statusObj?.status || 'REMEDIATED'
-            const stInfo  = STATUS_LABEL[st] || STATUS_LABEL['REMEDIATED']
+            const st      = inc.statusObj?.forensicsStatus || inc.statusObj?.status || 'ESCALATED'
+            const stInfo  = STATUS_LABEL[st] || STATUS_LABEL['ESCALATED']
             const expanded = expandedId === inc.key
             const log      = custodyLogs[inc.key] || []
 
@@ -232,7 +232,7 @@ export default function ForensicsDashboard() {
                           Submit Forensic Report for Audit
                         </button>
                       )}
-                      {st === 'AWAITING_AUDIT' && (
+                      {st === 'REPORT_SUBMITTED' && (
                         <span className="text-sm text-ink-3 italic">Awaiting Auditor verification…</span>
                       )}
                     </div>
@@ -269,6 +269,7 @@ export default function ForensicsDashboard() {
     </div>
   )
 }
+
 
 
 
