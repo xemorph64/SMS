@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { ShieldAlert, CheckCircle, Clock, AlertTriangle, Wrench, RotateCcw, Timer } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { listCaptures, adaptBackendCapture, getAllFindingsStatuses, updateFindingStatus } from '../lib/api'
+import { listCaptures, getCapture, adaptBackendCapture, getAllFindingsStatuses, updateFindingStatus } from '../lib/api'
 import { useAuth } from '../lib/auth'
 
 // Status machine for IR workflow (REMEDIATED and beyond hand off to Forensics)
@@ -68,19 +68,27 @@ export default function IRDashboard() {
 
   useEffect(() => {
     async function load() {
-      const [capList, allStatuses] = await Promise.all([
-        listCaptures().catch(() => []),
-        getAllFindingsStatuses().catch(() => []),
-      ])
-      const adapted = capList
-        .filter(c => c.status === 'COMPLETED')
-        .map(c => adaptBackendCapture(c))
-      setCaptures(adapted)
+      try {
+        // listCaptures() only returns summaries — no sessions or findings
+        // We must call getCapture(id) individually to get full data
+        const capList = await listCaptures().catch(() => [])
+        const completed = capList.filter(c => c.status === 'COMPLETED')
 
-      const map = {}
-      allStatuses.forEach(s => { map[`${s.captureId}-${s.streamId}`] = s })
-      setStatuses(map)
-      setLoading(false)
+        const fullDetails = await Promise.all(
+          completed.map(c => getCapture(c.id).catch(() => null))
+        )
+        const adapted = fullDetails
+          .filter(Boolean)
+          .map(detail => ({ ...adaptBackendCapture(detail), id: detail.id }))
+        setCaptures(adapted)
+
+        const allStatuses = await getAllFindingsStatuses().catch(() => [])
+        const map = {}
+        allStatuses.forEach(s => { map[`${s.captureId}-${s.streamId}`] = s })
+        setStatuses(map)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [])

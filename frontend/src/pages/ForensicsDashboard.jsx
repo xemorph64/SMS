@@ -28,20 +28,27 @@ export default function ForensicsDashboard() {
 
   useEffect(() => {
     async function load() {
-      const [capList, allStatuses] = await Promise.all([
-        listCaptures().catch(() => []),
-        getAllFindingsStatuses().catch(() => []),
-      ])
-      const adapted = capList
-        .filter(c => c.status === 'COMPLETED')
-        .map(c => adaptBackendCapture(c))
-      setCaptures(adapted)
+      try {
+        // listCaptures() only returns summaries — no sessions/findings
+        // Must call getCapture(id) to get full report with sessions
+        const capList = await listCaptures().catch(() => [])
+        const completed = capList.filter(c => c.status === 'COMPLETED')
 
-      // Build statuses map
-      const map = {}
-      allStatuses.forEach(s => { map[`${s.captureId}-${s.streamId}`] = s })
-      setStatuses(map)
-      setLoading(false)
+        const fullDetails = await Promise.all(
+          completed.map(c => getCapture(c.id).catch(() => null))
+        )
+        const adapted = fullDetails
+          .filter(Boolean)
+          .map(detail => ({ ...adaptBackendCapture(detail), id: detail.id }))
+        setCaptures(adapted)
+
+        const allStatuses = await getAllFindingsStatuses().catch(() => [])
+        const map = {}
+        allStatuses.forEach(s => { map[`${s.captureId}-${s.streamId}`] = s })
+        setStatuses(map)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [])
