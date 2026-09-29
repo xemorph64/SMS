@@ -46,15 +46,18 @@ public class AnalysisService {
     private final EngineClient engine;
     private final EngineProperties properties;
     private final JobState jobs;
+    private final IncidentService incidents;
     private final org.springframework.transaction.support.TransactionTemplate transactions;
 
     public AnalysisService(CaptureRepository captures, EngineClient engine,
-                           EngineProperties properties, JobState jobs, org.springframework.transaction.PlatformTransactionManager manager) {
+                           EngineProperties properties, JobState jobs, IncidentService incidents,
+                           org.springframework.transaction.PlatformTransactionManager manager) {
         this.jobs = jobs;
         this.transactions = new org.springframework.transaction.support.TransactionTemplate(manager);
         this.captures = captures;
         this.engine = engine;
         this.properties = properties;
+        this.incidents = incidents;
     }
 
     @Transactional
@@ -276,6 +279,7 @@ public class AnalysisService {
             } else {
                 apply(c, report); c.setStatus(Capture.Status.COMPLETED); c.setStage("COMPLETED");
                 c.setAnalysedAt(Instant.now());
+                incidents.detectFrom(c);
             }
             return captures.save(c);
         });

@@ -243,7 +243,42 @@ export const saveRemediation = async (id, key, status, note = '') => json(await 
   method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, status, note }),
 }))
 
-// ─── Findings Status API (DB-backed, replaces localStorage) ──────────────────
+// ─── Incident Workflow API (dual-track state machine, RBAC server-side) ─────
+export const listIncidents = async (status) =>
+  json(await fetchWithAuth(`/api/incidents${status ? `?status=${status}` : ''}`))
+
+export const getIncident = async (id) =>
+  json(await fetchWithAuth(`/api/incidents/${id}`))
+
+export const triageIncident = async (id, decision, reason = '') =>
+  json(await fetchWithAuth(`/api/incidents/${id}/triage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ decision, reason }),
+  }))
+
+export const advanceIrTrack = async (id, irStatus, remediationNotes = '') =>
+  json(await fetchWithAuth(`/api/incidents/${id}/ir-track`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ irStatus, remediationNotes }),
+  }))
+
+export const advanceDfTrack = async (id, dfStatus, forensicReport = '') =>
+  json(await fetchWithAuth(`/api/incidents/${id}/df-track`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dfStatus, forensicReport }),
+  }))
+
+export const submitAuditVerdict = async (id, verdict, reason = '') =>
+  json(await fetchWithAuth(`/api/incidents/${id}/audit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ verdict, reason }),
+  }))
+
+// ─── Findings Status API (legacy, read-only — the incident API above owns writes) ─
 export const getAllFindingsStatuses = async () =>
   json(await fetchWithAuth('/api/findings'))
 

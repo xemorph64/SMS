@@ -2,10 +2,12 @@ package in.gov.ntro.sih.ms.web;
 
 import in.gov.ntro.sih.ms.engine.EngineClient;
 import in.gov.ntro.sih.ms.service.AnalysisService;
+import in.gov.ntro.sih.ms.service.IncidentService;
 import java.time.Instant;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -35,6 +37,19 @@ public class ApiExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> notFound(IllegalArgumentException e) {
         return body(HttpStatus.NOT_FOUND, e.getMessage());
+    }
+
+    /** A workflow move the current state does not allow — the client asked for an illegal step. */
+    @ExceptionHandler(IncidentService.InvalidTransition.class)
+    public ResponseEntity<Map<String, Object>> invalidTransition(IncidentService.InvalidTransition e) {
+        return body(HttpStatus.CONFLICT, e.getMessage());
+    }
+
+    /** RBAC denial, in the same readable shape as every other handled error. */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> denied(AccessDeniedException e) {
+        return body(HttpStatus.FORBIDDEN,
+                "Your role is not authorized to perform this action (separation of duties)");
     }
 
     private static ResponseEntity<Map<String, Object>> body(HttpStatus status, String message) {

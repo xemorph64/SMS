@@ -15,6 +15,7 @@ import AuditorDashboard from './pages/AuditorDashboard'
 import AdminDashboard from './pages/AdminDashboard'
 import IRDashboard from './pages/IRDashboard'
 import ForensicsDashboard from './pages/ForensicsDashboard'
+import IncidentCommandCenter from './pages/IncidentCommandCenter'
 import { health as fetchHealth } from './lib/api'
 import { AuthContext, useAuth } from './lib/auth'
 
@@ -60,12 +61,12 @@ function Header({ health }) {
     navigate('/login')
   }
 
-  let dashboardPath = '/';
-  if (role === 'ROLE_SOC_ANALYST')             dashboardPath = '/analyst-dashboard';
-  else if (role === 'ROLE_INCIDENT_RESPONDER') dashboardPath = '/ir-dashboard';
-  else if (role === 'ROLE_FORENSICS_ANALYST')  dashboardPath = '/forensics-dashboard';
-  else if (role === 'ROLE_AUDITOR')            dashboardPath = '/auditor-dashboard';
-  else if (role === 'ROLE_ADMIN')              dashboardPath = '/admin-dashboard';
+  let dashboardPath = '/incidents';
+  if (role === 'ROLE_SOC_ANALYST')             dashboardPath = '/incidents';
+  else if (role === 'ROLE_INCIDENT_RESPONDER') dashboardPath = '/incidents';
+  else if (role === 'ROLE_FORENSICS_ANALYST')  dashboardPath = '/incidents';
+  else if (role === 'ROLE_AUDITOR')            dashboardPath = '/incidents';
+  else if (role === 'ROLE_ADMIN')              dashboardPath = '/incidents';
 
   return (
     <header className="border-b border-line bg-surface/80 backdrop-blur-xl sticky top-0 z-50 transition-colors duration-300">
@@ -80,45 +81,41 @@ function Header({ health }) {
             </span>
           </Link>
 
-          {token && role === 'ROLE_SOC_ANALYST' && (
+          {token && (
             <nav className="hidden sm:flex gap-1 text-[14px]">
-              <NavLink to="/analyst-dashboard" active={pathname === '/analyst-dashboard'}>
-                New Analysis
+              <NavLink to="/incidents" active={pathname.startsWith('/incidents')}>
+                Incidents
               </NavLink>
-              <NavLink to="/investigations" active={pathname.startsWith('/investigations')}>
-                Investigations
-              </NavLink>
-            </nav>
-          )}
-          {token && role === 'ROLE_INCIDENT_RESPONDER' && (
-            <nav className="hidden sm:flex gap-1 text-[14px]">
-              <NavLink to="/ir-dashboard" active={pathname === '/ir-dashboard'}>
-                Incident Response
-              </NavLink>
-              <NavLink to="/investigations" active={pathname.startsWith('/investigations')}>
-                All Investigations
-              </NavLink>
-            </nav>
-          )}
-          {token && role === 'ROLE_FORENSICS_ANALYST' && (
-            <nav className="hidden sm:flex gap-1 text-[14px]">
-              <NavLink to="/forensics-dashboard" active={pathname === '/forensics-dashboard'}>
-                Forensic Evidence
-              </NavLink>
-            </nav>
-          )}
-          {token && role === 'ROLE_AUDITOR' && (
-            <nav className="hidden sm:flex gap-1 text-[14px]">
-              <NavLink to="/auditor-dashboard" active={pathname === '/auditor-dashboard'}>
-                Compliance Overview
-              </NavLink>
-            </nav>
-          )}
-          {token && role === 'ROLE_ADMIN' && (
-            <nav className="hidden sm:flex gap-1 text-[14px]">
-              <NavLink to="/admin-dashboard" active={pathname === '/admin-dashboard'}>
-                Administration
-              </NavLink>
+              {role === 'ROLE_SOC_ANALYST' && (
+                <>
+                  <NavLink to="/analyst-dashboard" active={pathname === '/analyst-dashboard'}>
+                    New Analysis
+                  </NavLink>
+                  <NavLink to="/investigations" active={pathname.startsWith('/investigations')}>
+                    Investigations
+                  </NavLink>
+                </>
+              )}
+              {role === 'ROLE_INCIDENT_RESPONDER' && (
+                <NavLink to="/investigations" active={pathname.startsWith('/investigations')}>
+                  All Investigations
+                </NavLink>
+              )}
+              {role === 'ROLE_FORENSICS_ANALYST' && (
+                <NavLink to="/forensics-dashboard" active={pathname === '/forensics-dashboard'}>
+                  Forensic Evidence
+                </NavLink>
+              )}
+              {role === 'ROLE_AUDITOR' && (
+                <NavLink to="/auditor-dashboard" active={pathname === '/auditor-dashboard'}>
+                  Compliance Overview
+                </NavLink>
+              )}
+              {role === 'ROLE_ADMIN' && (
+                <NavLink to="/admin-dashboard" active={pathname === '/admin-dashboard'}>
+                  Administration
+                </NavLink>
+              )}
             </nav>
           )}
         </div>
@@ -265,15 +262,10 @@ export default function App() {
   const authCtx = useMemo(() => ({ token, role, login, logout }), [token, role])
   const reportCtx = useMemo(() => ({ report, setReport, health }), [report, health])
 
-  // Determine root redirect
+  // Determine root redirect — every role lands on the unified incident view
   const RootRedirect = () => {
     if (!token) return <Navigate to="/login" replace />
-    if (role === 'ROLE_SOC_ANALYST')             return <Navigate to="/analyst-dashboard" replace />
-    if (role === 'ROLE_INCIDENT_RESPONDER')      return <Navigate to="/ir-dashboard" replace />
-    if (role === 'ROLE_FORENSICS_ANALYST')       return <Navigate to="/forensics-dashboard" replace />
-    if (role === 'ROLE_AUDITOR')                 return <Navigate to="/auditor-dashboard" replace />
-    if (role === 'ROLE_ADMIN')                   return <Navigate to="/admin-dashboard" replace />
-    return <Navigate to="/login" replace />
+    return <Navigate to="/incidents" replace />
   }
 
   return (
@@ -286,6 +278,13 @@ export default function App() {
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/" element={<RootRedirect />} />
+
+                {/* Unified incident command center — every role, tab-scoped by role */}
+                <Route path="/incidents" element={
+                  <ProtectedRoute allowedRoles={['ROLE_SOC_ANALYST', 'ROLE_INCIDENT_RESPONDER', 'ROLE_FORENSICS_ANALYST', 'ROLE_AUDITOR', 'ROLE_ADMIN']}>
+                    <IncidentCommandCenter />
+                  </ProtectedRoute>
+                } />
                 
                 {/* ROLE_SOC_ANALYST Routes */}
                 <Route path="/analyst-dashboard" element={

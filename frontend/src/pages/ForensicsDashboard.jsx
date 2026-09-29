@@ -59,7 +59,6 @@ export default function ForensicsDashboard() {
       .filter(s => {
         const key = `${cap.id}-${s.tcp_stream}`
         const st  = statuses[key]?.forensicsStatus || statuses[key]?.status
-        console.log(`[ForensicsDashboard] Checking ${key}: status=${st}`)
         return !['REPORT_SUBMITTED', 'VERIFIED'].includes(st)
       })
       .map(s => ({
@@ -74,7 +73,6 @@ export default function ForensicsDashboard() {
         statusObj:   statuses[`${cap.id}-${s.tcp_stream}`],
       }))
   )
-  console.log(`[ForensicsDashboard] Filtered incidents:`, forensicIncidents)
 
   async function advanceStatus(inc, nextStatus) {
     const updated = await updateForensicsStatus(inc.captureId, inc.stream, nextStatus)
@@ -105,13 +103,6 @@ export default function ForensicsDashboard() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="bg-surface border border-line p-4 rounded-xl text-[10px] font-mono text-ink-2 overflow-auto max-h-48 whitespace-pre">
-        <strong>DEBUG DATA:</strong><br />
-        Captures count: {captures.length}<br />
-        Statuses: {JSON.stringify(statuses)}<br />
-        Captures dump: {JSON.stringify(captures.map(c => ({ id: c.id, sessionsCount: c.sessions?.length, sessions: c.sessions?.map(s => ({ stream: s.tcp_stream, findings: s.findings?.length })) })), null, 2)}
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
