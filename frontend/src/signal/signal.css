@@ -1,0 +1,276 @@
+@import '@fontsource-variable/archivo/wdth.css';
+@import '@fontsource-variable/doto/index.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * SIGNAL palette. Carbon and bone do the work; one vermilion ("signal")
+ * means threat or attention and nothing else. Ice = encrypted / healthy,
+ * go = passed / closed, heat = high severity, mid = medium.
+ *
+ * Shape: square panels (0 radius) framed by reticle corners; controls 2px;
+ * pills only for the dock and status chips.
+ */
+:root {
+  --s-carbon: 10 10 11;
+  --s-carbon-2: 17 17 19;
+  --s-carbon-3: 24 24 27;
+  --s-carbon-4: 33 33 37;
+  --s-hair: 38 38 42;
+  --s-hair-2: 58 58 63;
+  --s-bone: 236 232 225;
+  --s-ash: 154 150 143;
+  --s-smoke: 104 101 97;
+  --s-signal: 255 79 26;
+  --s-heat: 255 176 32;
+  --s-mid: 226 214 106;
+  --s-ice: 169 220 242;
+  --s-go: 200 240 90;
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --s-carbon: 239 236 230;
+  --s-carbon-2: 246 244 240;
+  --s-carbon-3: 230 227 220;
+  --s-carbon-4: 220 216 208;
+  --s-hair: 212 207 199;
+  --s-hair-2: 180 174 165;
+  --s-bone: 18 18 18;
+  --s-ash: 82 79 74;
+  --s-smoke: 120 116 110;
+  --s-signal: 226 58 8;
+  --s-heat: 176 104 0;
+  --s-mid: 128 112 0;
+  --s-ice: 22 104 146;
+  --s-go: 62 118 0;
+  color-scheme: light;
+}
+
+/* Semantic aliases (tone keys used by components and 3D scenes). */
+:root {
+  --s-safe: var(--s-go);
+  --s-danger: var(--s-signal);
+  --s-warning: var(--s-heat);
+  --s-caution: var(--s-mid);
+  --s-cipher: var(--s-ice);
+  --s-gold: var(--s-signal);
+  --s-edge: var(--s-hair);
+  --s-edge-2: var(--s-hair-2);
+  --s-fg-3: var(--s-smoke);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: rgb(var(--s-carbon));
+  color: rgb(var(--s-bone));
+  font-family: 'Archivo Variable', system-ui, sans-serif;
+  font-variation-settings: 'wdth' 100;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgb(var(--s-signal));
+  color: rgb(var(--s-carbon));
+}
+
+:focus-visible {
+  outline: 1.5px solid rgb(var(--s-signal));
+  outline-offset: 3px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Expanded caps for headlines: the instrument-panel voice. */
+.sg-display {
+  font-variation-settings: 'wdth' 125;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+}
+.sg-condensed {
+  font-variation-settings: 'wdth' 80;
+}
+
+.sg-grain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@layer components {
+  /* Reticle panel: hairline box, bracket corners, cursor spotlight. */
+  .sg-panel {
+    position: relative;
+    background: rgb(var(--s-carbon-2) / 0.78);
+    border: 1px solid rgb(var(--s-hair));
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  .sg-panel::before {
+    --c: rgb(var(--s-bone) / 0.5);
+    --l: 9px;
+    content: '';
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    z-index: 1;
+    background:
+      linear-gradient(var(--c), var(--c)) top left / var(--l) 1px no-repeat,
+      linear-gradient(var(--c), var(--c)) top left / 1px var(--l) no-repeat,
+      linear-gradient(var(--c), var(--c)) top right / var(--l) 1px no-repeat,
+      linear-gradient(var(--c), var(--c)) top right / 1px var(--l) no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom left / var(--l) 1px no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom left / 1px var(--l) no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom right / var(--l) 1px no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom right / 1px var(--l) no-repeat;
+  }
+  .sg-panel:hover::before,
+  .sg-panel[data-active='true']::before {
+    --c: rgb(var(--s-signal));
+  }
+  .sg-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgb(var(--s-bone) / 0.055), transparent 70%);
+  }
+  .sg-panel:hover::after {
+    opacity: 1;
+  }
+
+  .sg-btn {
+    @apply relative inline-flex h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-[2px] px-4 text-[13px] font-medium uppercase tracking-[0.06em] transition-[background,color,border-color,transform] duration-200;
+  }
+  .sg-btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+  .sg-btn:disabled {
+    @apply cursor-not-allowed opacity-35;
+  }
+  .sg-btn-primary {
+    @apply sg-btn bg-bone text-carbon hover:bg-signal hover:text-carbon;
+  }
+  .sg-btn-ghost {
+    @apply sg-btn border border-hair-2 bg-carbon/40 text-bone hover:border-bone;
+  }
+  .sg-btn-danger {
+    @apply sg-btn border border-signal/60 text-signal hover:bg-signal hover:text-carbon;
+  }
+  .sg-btn-safe {
+    @apply sg-btn bg-go text-carbon hover:brightness-110;
+  }
+  .sg-btn-sm {
+    @apply h-8 px-3 text-[11.5px];
+  }
+
+  .sg-input {
+    @apply block w-full rounded-[2px] border border-hair-2 bg-carbon/60 px-3.5 py-2.5 text-[14px] text-bone transition-colors placeholder:text-smoke;
+  }
+  .sg-input:focus {
+    @apply border-signal outline-none;
+  }
+  .sg-label {
+    @apply mb-1.5 block font-code text-[11px] uppercase tracking-[0.12em] text-ash;
+  }
+  .sg-kicker {
+    @apply font-code text-[11px] uppercase tracking-[0.16em] text-smoke;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--s-hair-2));
+}
+
+.recharts-default-tooltip {
+  background: rgb(var(--s-carbon-3)) !important;
+  border: 1px solid rgb(var(--s-hair-2)) !important;
+  border-radius: 0 !important;
+  color: rgb(var(--s-bone)) !important;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+}
+
+@keyframes sg-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+.sg-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgb(var(--s-carbon-2) / 0.8);
+  border: 1px solid rgb(var(--s-hair));
+}
+.sg-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(var(--s-signal) / 0.08), transparent);
+  animation: sg-sweep 1.4s linear infinite;
+}
+
+@keyframes sg-blink {
+  50% { opacity: 0.25; }
+}
+.sg-blink {
+  animation: sg-blink 1.1s steps(1) infinite;
+}
+
+@keyframes sg-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.sg-marquee {
+  animation: sg-marquee 40s linear infinite;
+}
+
+/* cmdk palette */
+[cmdk-item][data-selected='true'] {
+  background: rgb(var(--s-carbon-4));
+  color: rgb(var(--s-bone));
+}
+[cmdk-item][data-selected='true'] .cmdk-arrow {
+  opacity: 1;
+  color: rgb(var(--s-signal));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Paper theme: the signal field stays as texture, never competes with text. */
+:root[data-theme='light'] .sg-field {
+  opacity: 0.5;
+}

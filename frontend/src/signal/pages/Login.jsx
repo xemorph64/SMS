@@ -1,0 +1,191 @@
+import React, { lazy, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { ArrowRight } from 'lucide-react'
+import { useAuth } from '../../lib/auth'
+import Scene3D from '../three/Scene3D'
+import SignalField from '../components/SignalField'
+import { Decode, Magnetic } from '../ui'
+
+const HandshakeScene = lazy(() => import('../three/HandshakeScene'))
+
+// Demo accounts, presented as channels.
+const DEMO_PROFILES = [
+  { username: 'analyst', ch: '01', role: 'SOC Analyst', duty: 'Detect & triage' },
+  { username: 'ir', ch: '02', role: 'Incident Response', duty: 'Contain & fix' },
+  { username: 'forensics', ch: '03', role: 'Forensics', duty: 'Preserve evidence' },
+  { username: 'auditor', ch: '04', role: 'Auditor', duty: 'Verify & close' },
+  { username: 'admin', ch: '05', role: 'Admin', duty: 'Oversee platform' },
+]
+
+const ease = [0.16, 1, 0.3, 1]
+
+function StaticHandshake() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center" aria-hidden>
+      <div className="relative h-[360px] w-[360px]">
+        <div className="absolute inset-0 rounded-full border border-ice/20" />
+        <div className="absolute inset-[18%] rounded-full border border-bone/30" />
+        <div className="absolute inset-[36%] rounded-full border border-ice/50" />
+      </div>
+    </div>
+  )
+}
+
+export default function Login() {
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const { login } = useAuth()
+  const navigate = useNavigate()
+
+  const pick = (account) => {
+    setUsername(account)
+    setPassword('password')
+    setError(null)
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        login(data.token)
+        navigate('/incidents')
+      } else {
+        setError('Invalid credentials')
+      }
+    } catch {
+      setError('Connection failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="sg-grain relative min-h-[100dvh] overflow-hidden">
+      <SignalField />
+
+      {/* the globe: the product's thesis */}
+      <div className="pointer-events-none absolute inset-0 z-[1] lg:right-[34%]">
+        <Scene3D className="h-full w-full" camera={{ position: [0, -0.2, 8.2], fov: 42 }} fallback={<StaticHandshake />}>
+          <HandshakeScene />
+        </Scene3D>
+      </div>
+
+      <div className="relative z-10 grid min-h-[100dvh] lg:grid-cols-[minmax(0,1fr)_460px]">
+        {/* left: statement */}
+        <section className="flex min-h-[62dvh] flex-col justify-between p-6 sm:p-10">
+          <div className="flex items-center gap-3">
+            <span className="relative inline-flex h-7 w-7 items-center justify-center border border-bone" aria-hidden>
+              <span className="h-2 w-2 bg-signal" />
+              <span className="absolute -right-[3px] -top-[3px] h-1.5 w-1.5 bg-bone" />
+            </span>
+            <span className="sg-display text-[13px] font-bold text-bone">SecureMailScope</span>
+            <span className="ml-2 hidden font-code text-[10.5px] uppercase tracking-[0.14em] text-smoke sm:inline">Passive mail forensics</span>
+          </div>
+
+          <div className="pointer-events-none">
+            <h1 className="sg-display text-[44px] font-bold leading-[0.92] text-bone sm:text-[72px] xl:text-[96px]">
+              <Decode text="Touch nothing." className="block" />
+              <span className="block text-signal"><Decode text="Read everything." delay={250} /></span>
+            </h1>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5, ease }}
+              className="mt-6 max-w-[44ch] text-[15.5px] leading-relaxed text-ash"
+            >
+              Every SMTP, IMAP and POP3 session in a capture, rebuilt and graded against 35 NIST and RFC rules. Nothing is sent to the network.
+            </motion.p>
+            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 font-code text-[10.5px] uppercase tracking-[0.12em] text-ash">
+              <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rotate-45 bg-signal" /> Cleartext mail</span>
+              <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full border border-bone" /> TLS boundary</span>
+              <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rotate-45 bg-ice" /> Encrypted</span>
+            </div>
+          </div>
+        </section>
+
+        {/* right: sign in console */}
+        <motion.section
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, delay: 0.2, ease }}
+          className="flex items-center border-hair bg-carbon/80 p-6 backdrop-blur-xl sm:p-10 lg:border-l"
+        >
+          <div className="w-full">
+            <div className="sg-kicker">Secure channel</div>
+            <h2 className="sg-display mt-2 text-[26px] font-bold text-bone">Sign in</h2>
+            <p className="mt-1 text-[14px] text-ash">Your role decides what you can see and do.</p>
+
+            {error && (
+              <div role="alert" className="mt-6 border-l-2 border-signal bg-signal/10 px-4 py-2.5 font-code text-[12px] uppercase tracking-[0.08em] text-signal">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+              <div>
+                <label className="sg-label" htmlFor="login-username">Operator</label>
+                <input id="login-username" className="sg-input" value={username} autoComplete="username"
+                  onChange={(e) => setUsername(e.target.value)} placeholder="e.g. analyst" required />
+              </div>
+              <div>
+                <label className="sg-label" htmlFor="login-password">Passphrase</label>
+                <input id="login-password" type="password" className="sg-input" value={password} autoComplete="current-password"
+                  onChange={(e) => setPassword(e.target.value)} required />
+              </div>
+              <Magnetic className="w-full" strength={0.12}>
+                <button type="submit" className="sg-btn-primary h-12 w-full justify-between px-5" disabled={busy}>
+                  <span>{busy ? 'Opening channel' : 'Open channel'}</span>
+                  <ArrowRight size={16} strokeWidth={1.75} />
+                </button>
+              </Magnetic>
+            </form>
+
+            <div className="mt-9">
+              <div className="mb-3 flex items-baseline justify-between">
+                <span className="sg-label mb-0">Demo channels</span>
+                <span className="font-code text-[11px] text-smoke">pass: <span className="text-ash">password</span></span>
+              </div>
+              <div className="border-t border-hair">
+                {DEMO_PROFILES.map((p, i) => {
+                  const selected = username === p.username && password === 'password'
+                  return (
+                    <motion.button
+                      key={p.username}
+                      type="button"
+                      onClick={() => pick(p.username)}
+                      initial={{ opacity: 0, x: 12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.45 + i * 0.06, ease }}
+                      className={`group grid w-full grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-3 border-b border-hair px-1 py-3 text-left transition-colors ${
+                        selected ? 'bg-signal/10' : 'hover:bg-carbon-3'
+                      }`}
+                    >
+                      <span className={`font-dot text-[18px] font-bold leading-none ${selected ? 'text-signal' : 'text-smoke group-hover:text-ash'}`}>{p.ch}</span>
+                      <span className="min-w-0">
+                        <span className="block text-[14px] font-medium text-bone">{p.role}</span>
+                        <span className="block font-code text-[11px] text-smoke">{p.username} · {p.duty}</span>
+                      </span>
+                      <span className={`font-code text-[10.5px] uppercase tracking-[0.12em] ${selected ? 'text-signal' : 'text-hair-2 group-hover:text-ash'}`}>
+                        {selected ? 'Tuned' : 'Tune'}
+                      </span>
+                    </motion.button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </motion.section>
+      </div>
+    </div>
+  )
+}
