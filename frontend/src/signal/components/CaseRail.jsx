@@ -18,8 +18,8 @@ function Seat({ id, mine }) {
   const [n, label, verb] = SEATS[id]
   return (
     <span
-      className={`inline-flex h-7 items-center gap-1.5 whitespace-nowrap px-2 font-code text-[11px] uppercase tracking-[0.1em] ${
-        mine ? 'bg-signal text-carbon' : 'text-smoke'
+      className={`inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md px-2 text-[11.5px] font-bold uppercase tracking-[0.04em] ${
+        mine ? 'bg-signal text-white' : 'text-smoke'
       }`}
       aria-current={mine ? 'step' : undefined}
       title={mine ? 'Your seat in the workflow' : undefined}
@@ -41,7 +41,7 @@ export default function CaseRail({ seat }) {
       <Wire />
       <span className="inline-flex items-center border border-dashed border-hair-2">
         <Seat id="ir" mine={all || seat === 'ir'} />
-        <span className="px-1 font-code text-[11px] text-smoke" title="Run in parallel">∥</span>
+        <span className="px-1 text-[12px] text-smoke" title="Run in parallel">∥</span>
         <Seat id="forensics" mine={all || seat === 'forensics'} />
       </span>
       <Wire />

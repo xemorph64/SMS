@@ -46,11 +46,11 @@ export function Decode({ text, className = '', delay = 0, speed = 1 }) {
 
 // ----------------------------------------------------------------- readout
 
-/** Dot-matrix numeral that rolls when its value changes. */
+/** Numeral that rolls when its value changes. Plain, readable digits. */
 export function Readout({ value, className = '', suffix }) {
   const numeric = typeof value === 'number' && Number.isFinite(value)
   return (
-    <span className={`font-dot font-bold leading-none tabular ${className}`}>
+    <span className={`font-bold leading-none tabular ${className}`}>
       {numeric ? <NumberFlow value={value} willChange /> : value}
       {suffix && <span className="ml-0.5 text-[0.5em] text-smoke">{suffix}</span>}
     </span>
@@ -107,7 +107,7 @@ export function Explain({ term, text, className = '' }) {
   const hide = () => setPos(null)
 
   return (
-    <span className={`inline-flex align-middle normal-case tracking-normal ${className}`} style={{ fontVariationSettings: "'wdth' 100" }}>
+    <span className={`inline-flex align-middle ${className}`}>
       <button
         ref={btn}
         type="button"
@@ -127,7 +127,7 @@ export function Explain({ term, text, className = '' }) {
           <span
             id={id}
             role="tooltip"
-            style={{ position: 'fixed', left: pos.left, top: pos.top, bottom: pos.bottom, width: pos.width, fontVariationSettings: "'wdth' 100" }}
+            style={{ position: 'fixed', left: pos.left, top: pos.top, bottom: pos.bottom, width: pos.width }}
             className="z-[90] border border-hair-2 border-l-2 border-l-signal bg-carbon-3 px-3 py-2.5 text-left text-[12.5px] font-normal normal-case leading-relaxed tracking-normal text-bone shadow-2xl"
           >
             {body}
@@ -152,14 +152,14 @@ export function PageHeader({ title, purpose, term, actions, back, kicker }) {
   return (
     <header className="mb-10">
       {back && (
-        <Link to={back.to} className="mb-6 inline-flex items-center gap-2 font-code text-[11.5px] uppercase tracking-[0.12em] text-ash transition-colors hover:text-signal">
-          <ArrowLeft size={14} strokeWidth={1.75} /> {back.label}
+        <Link to={back.to} className="mb-6 inline-flex items-center gap-2 text-[13px] font-semibold text-ash transition-colors hover:text-signal">
+          <ArrowLeft size={15} strokeWidth={2} /> {back.label}
         </Link>
       )}
       <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
           {kicker && <div className="sg-kicker mb-3">{kicker}</div>}
-          <h1 className="sg-display flex items-center gap-3 text-[30px] font-semibold leading-[1.02] text-bone md:text-[44px]">
+          <h1 className="flex items-center gap-3 text-[30px] font-bold leading-[1.06] text-bone md:text-[40px]">
             <span className="min-w-0 break-words"><Decode text={title} /></span>
             {term && <Explain term={term} />}
           </h1>
@@ -175,12 +175,12 @@ export function SectionTitle({ title, term, hint, right, className = '', index }
   return (
     <div className={`mb-5 flex flex-wrap items-end justify-between gap-4 border-b border-hair pb-3 ${className}`}>
       <div>
-        <h2 className="sg-display flex items-center gap-2.5 text-[17px] font-semibold text-bone">
-          {index && <span className="font-code text-[11px] font-normal text-signal">{index}</span>}
+        <h2 className="flex items-center gap-2.5 text-[18px] font-bold text-bone">
+          {index && <span className="font-code text-[12px] font-bold text-signal">{index}</span>}
           {title}
           {term && <Explain term={term} />}
         </h2>
-        {hint && <p className="mt-1.5 text-[13px] text-smoke">{hint}</p>}
+        {hint && <p className="mt-1.5 text-[13px] text-ash">{hint}</p>}
       </div>
       {right}
     </div>
@@ -198,21 +198,21 @@ export function gradeColor(letter) {
   return 'rgb(var(--s-smoke))'
 }
 
-/** Grade as a dot-matrix readout in a bracketed cell. */
+/** Grade as a plain, high-contrast readout in a soft cell. */
 export function Grade({ grade, size = 'md', className = '' }) {
   const letter = grade || '–'
   const color = gradeColor(letter)
   const dims = {
-    xs: 'h-6 min-w-6 px-1 text-[15px]',
-    sm: 'h-9 min-w-9 px-1.5 text-[22px]',
-    md: 'h-12 min-w-12 px-2 text-[32px]',
-    lg: 'h-24 min-w-24 px-3 text-[72px]',
-    xl: 'h-40 min-w-36 px-4 text-[132px]',
+    xs: 'h-7 min-w-7 px-1.5 text-[14px]',
+    sm: 'h-10 min-w-10 px-2 text-[19px]',
+    md: 'h-12 min-w-12 px-2.5 text-[26px]',
+    lg: 'h-24 min-w-24 px-3 text-[64px]',
+    xl: 'h-40 min-w-36 px-4 text-[120px]',
   }[size]
   return (
     <span
-      className={`relative inline-flex shrink-0 items-center justify-center border font-dot font-black leading-none ${dims} ${className}`}
-      style={{ color, borderColor: `color-mix(in srgb, ${color} 45%, transparent)`, background: `color-mix(in srgb, ${color} 7%, transparent)` }}
+      className={`relative inline-flex shrink-0 items-center justify-center rounded-md border font-bold leading-none ${dims} ${className}`}
+      style={{ color, borderColor: `color-mix(in srgb, ${color} 45%, transparent)`, background: `color-mix(in srgb, ${color} 10%, rgb(var(--s-carbon-2)))` }}
       aria-label={`Grade ${letter}`}
       title={`Grade ${letter}`}
     >
@@ -224,23 +224,32 @@ export function Grade({ grade, size = 'md', className = '' }) {
 // ---------------------------------------------------------------- severity
 
 const SEV = {
-  critical: ['signal', 'CRIT'],
-  high: ['heat', 'HIGH'],
-  medium: ['mid', 'MED'],
-  low: ['ash', 'LOW'],
-  info: ['ice', 'INFO'],
-  warn: ['heat', 'WARN'],
+  critical: ['signal', 'Critical'],
+  high: ['heat', 'High'],
+  medium: ['mid', 'Medium'],
+  low: ['ash', 'Low'],
+  info: ['ice', 'Info'],
+  warn: ['heat', 'Warn'],
 }
 
+/**
+ * Severity is never colour-only: a filled dot marks it for colour-blind
+ * users and screen readers get the full word. Dot size scales with severity.
+ */
 export function Severity({ severity, className = '' }) {
   const key = String(severity || 'info').toLowerCase()
   const [tone, label] = SEV[key] || SEV.info
+  const critical = key === 'critical'
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-code text-[10.5px] font-medium uppercase tracking-[0.1em] ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-md bg-carbon-3/80 px-2 py-[3px] text-[12px] font-bold uppercase tracking-[0.04em] ${className}`}
       style={{ color: `rgb(var(--s-${tone}))` }}
     >
-      <span className="h-1.5 w-1.5" style={{ background: `rgb(var(--s-${tone}))` }} />
+      <span
+        className={critical ? 'h-2 w-2' : 'h-1.5 w-1.5'}
+        style={{ background: `rgb(var(--s-${tone}))` }}
+        aria-hidden
+      />
       {label}
     </span>
   )
@@ -261,7 +270,7 @@ const TAG = {
 
 export function Tag({ tone = 'muted', children, className = '' }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-[3px] font-code text-[10.5px] font-medium uppercase tracking-[0.08em] ${TAG[tone] || TAG.muted} ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-[3px] text-[11.5px] font-semibold tracking-[0.01em] ${TAG[tone] || TAG.muted} ${className}`}>
       {children}
     </span>
   )
@@ -282,12 +291,12 @@ const STAT_TONE = {
 export function Stat({ label, value, tone = 'default', term, hint }) {
   return (
     <div className="min-w-0">
-      <Readout value={value} className={`text-[44px] ${STAT_TONE[tone]}`} />
-      <div className="mt-2 flex items-center gap-1.5 font-code text-[10.5px] uppercase tracking-[0.12em] text-ash">
+      <Readout value={value} className={`text-[40px] ${STAT_TONE[tone]}`} />
+      <div className="mt-2 flex items-center gap-1.5 text-[13px] font-semibold text-ash">
         {label}
         {term && <Explain term={term} />}
       </div>
-      {hint && <div className="mt-1 text-[11.5px] text-smoke">{hint}</div>}
+      {hint && <div className="mt-1 text-[12.5px] leading-snug text-smoke">{hint}</div>}
     </div>
   )
 }
@@ -309,8 +318,8 @@ export function Notice({ tone = 'info', title, children, className = '' }) {
       role={tone === 'crit' ? 'alert' : undefined}
     >
       <span className="absolute inset-y-0 left-0 w-[3px]" style={{ background: `rgb(var(--s-${c}))` }} />
-      <div className="font-code text-[10.5px] uppercase tracking-[0.14em]" style={{ color: `rgb(var(--s-${c}))` }}>{label}</div>
-      {title && <div className="mt-1 text-[14px] font-medium text-bone">{title}</div>}
+      <div className="text-[12px] font-bold uppercase tracking-[0.05em]" style={{ color: `rgb(var(--s-${c}))` }}>{label}</div>
+      {title && <div className="mt-1 text-[14px] font-semibold text-bone">{title}</div>}
       {children && <div className="mt-1 text-[13.5px] leading-relaxed text-ash">{children}</div>}
     </div>
   )
@@ -319,8 +328,7 @@ export function Notice({ tone = 'info', title, children, className = '' }) {
 export function Empty({ title, children, action }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="mb-5 font-dot text-[34px] font-bold leading-none text-hair-2" aria-hidden>- - -</div>
-      <h3 className="sg-display text-[15px] font-semibold text-bone">{title}</h3>
+      <h3 className="text-[16px] font-bold text-bone">{title}</h3>
       {children && <div className="mt-2 max-w-md text-[13.5px] leading-relaxed text-smoke">{children}</div>}
       {action && <div className="mt-6">{action}</div>}
     </div>
@@ -345,7 +353,7 @@ export function Loading({ rows = 3, label = 'Loading' }) {
 export function KV({ k, v, bad = false, mono = false, term }) {
   return (
     <div className="flex items-start justify-between gap-4 py-2.5">
-      <span className="flex shrink-0 items-center gap-1.5 font-code text-[11px] uppercase tracking-[0.1em] text-smoke">
+      <span className="flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-ash">
         {k}
         {term && <Explain term={term} />}
       </span>
@@ -374,7 +382,7 @@ export function ShapBars({ contributions = [], max = 8 }) {
   const peak = Math.max(...rows.map((c) => Math.abs(c.contribution)), 0.0001)
   return (
     <figure className="m-0">
-      <figcaption className="mb-4 flex flex-wrap gap-x-5 gap-y-1 font-code text-[11px] uppercase tracking-[0.1em] text-smoke">
+      <figcaption className="mb-4 flex flex-wrap gap-x-5 gap-y-1 text-[12.5px] font-semibold text-ash">
         <span className="flex items-center gap-2"><span className="h-2 w-4 bg-signal" /> Raises risk</span>
         <span className="flex items-center gap-2"><span className="h-2 w-4 bg-ice" /> Lowers risk</span>
       </figcaption>
@@ -434,16 +442,16 @@ export function Tabs({ tabs, value, onChange }) {
             role="tab"
             aria-selected={active}
             onClick={() => onChange(t.id)}
-            className={`relative inline-flex items-center gap-2 whitespace-nowrap px-4 py-3 font-code text-[11.5px] uppercase tracking-[0.12em] transition-colors ${
-              active ? 'text-bone' : 'text-smoke hover:text-ash'
+            className={`relative inline-flex items-center gap-2 whitespace-nowrap rounded-md px-4 py-2.5 text-[13px] font-semibold transition-colors ${
+              active ? 'bg-carbon-3 text-bone' : 'text-smoke hover:text-ash'
             }`}
           >
             {t.label}
             {t.count != null && (
-              <span className={`font-dot text-[15px] font-bold leading-none ${active ? 'text-signal' : 'text-smoke'}`}>{t.count}</span>
+              <span className={`rounded-full px-1.5 text-[12px] font-bold leading-relaxed tabular ${active ? 'text-signal' : 'text-smoke'}`}>{t.count}</span>
             )}
             {active && (
-              <motion.span layoutId={`tab-${group}`} className="absolute inset-x-0 -bottom-px h-[2px] bg-signal" transition={{ type: 'spring', stiffness: 400, damping: 34 }} />
+              <motion.span layoutId={`tab-${group}`} className="absolute inset-x-2 -bottom-px h-[2.5px] rounded-full bg-signal" transition={{ type: 'spring', stiffness: 400, damping: 34 }} />
             )}
           </button>
         )

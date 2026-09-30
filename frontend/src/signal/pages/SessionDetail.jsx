@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CheckCircle2, AlertTriangle, CircleAlert, BrainCircuit, Binary } from 'lucide-react'
 
@@ -10,6 +10,32 @@ import { dateOnly, sessionKind, yesNo } from '../../lib/format'
 import {
   Empty, Explain, Grade, KV, Readout, Loading, Notice, PageHeader, Panel, SectionTitle, Severity, ShapBars, Tag,
 } from '../ui'
+
+/**
+ * Bytes shown per hex-dump row. Fixed 16 wastes the wide ASCII column on big
+ * screens; this measures the panel and fits as many bytes as the width allows
+ * (32-byte cap keeps rows scannable), shrinking on narrow containers.
+ */
+function useBytesPerRow(ref) {
+  const [perRow, setPerRow] = useState(16)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return undefined
+    const measure = () => {
+      const w = el.clientWidth
+      if (!w) return
+      // Row budget: padding (40px) + offset col (~48px) + two gaps (48px),
+      // then ~4 mono chars per byte (3 hex + 1 ascii, ~7.2px each at 12px font).
+      const fit = Math.floor((w - 40 - 48 - 48) / 29)
+      setPerRow(Math.max(8, Math.min(32, fit)))
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [ref])
+  return perRow
+}
 
 export default function SessionDetail() {
   const { id, stream } = useParams()
@@ -59,6 +85,8 @@ export default function SessionDetail() {
   const findings = s.findings || []
   const real = findings.filter((f) => f.severity !== 'info')
   const info = findings.filter((f) => f.severity === 'info')
+  const dumpRef = useRef(null)
+  const bytesPerRow = useBytesPerRow(dumpRef)
 
   return (
     <div>
@@ -247,11 +275,11 @@ export default function SessionDetail() {
               </span>
               {s.capability_mangled && <Tag tone="danger">Tampered bytes highlighted</Tag>}
             </div>
-            <pre className="m-0 max-h-[460px] overflow-auto p-5 font-code text-[12px] leading-relaxed text-ash">
+            <pre ref={dumpRef} className="m-0 max-h-[460px] overflow-auto p-5 font-code text-[12px] leading-relaxed text-ash">
               {s.command_transcript.flatMap((line, lineIdx) => {
                 const str = String(line || '')
                 const chunks = []
-                for (let i = 0; i < str.length; i += 16) chunks.push({ chunk: str.substring(i, i + 16), lineIdx, offset: i })
+                for (let i = 0; i < str.length; i += bytesPerRow) chunks.push({ chunk: str.substring(i, i + bytesPerRow), lineIdx, offset: i })
                 if (chunks.length === 0) chunks.push({ chunk: '', lineIdx, offset: 0 })
                 return chunks
               }).map(({ chunk, lineIdx, offset }, idx) => {
@@ -261,7 +289,9 @@ export default function SessionDetail() {
                 return (
                   <div key={idx} className={`flex gap-6 ${hit ? '-mx-5 border-y border-signal/30 bg-signal/10 px-5 text-signal' : 'hover:bg-carbon-3'}`}>
                     <span className="w-12 shrink-0 select-none text-smoke">{offset.toString(16).padStart(4, '0')}</span>
-                    <span className="w-[410px] shrink-0 whitespace-pre">{hex.padEnd(47, ' ')}</span>
+                    <span className="shrink-0 whitespace-pre" style={{ width: `${bytesPerRow * 3}ch` }}>
+                      {hex.padEnd(bytesPerRow * 3, ' ')}
+                    </span>
                     <span className={`flex-1 whitespace-pre ${hit ? '' : 'text-bone'}`}>{ascii}</span>
                   </div>
                 )

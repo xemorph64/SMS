@@ -283,8 +283,8 @@ export default function IncidentDetail({ incident, onChanged }) {
 
 function Label({ n, children }) {
   return (
-    <div className="mb-3 flex items-center gap-2 font-code text-[11px] uppercase tracking-[0.14em] text-ash">
-      <span className="text-signal">{n}</span> {children}
+    <div className="mb-3 flex items-center gap-2 text-[13px] font-bold text-ash">
+      <span className="font-code text-[12px] font-bold text-signal">{n}</span> {children}
     </div>
   )
 }
@@ -307,8 +307,8 @@ function SealRow({ icon: Icon, k, term, v }) {
 function ActionCard({ title, term, highlight, children }) {
   return (
     <div className="sg-panel flex flex-col gap-4 p-5 sm:p-6" data-active={highlight ? 'true' : undefined}>
-      <div className="sg-display flex items-center gap-2 text-[14px] font-semibold text-bone">
-        <span className="font-code text-[11px] font-normal text-signal">04</span>
+      <div className="flex items-center gap-2 text-[15px] font-bold text-bone">
+        <span className="font-code text-[12px] font-bold text-signal">04</span>
         {title} <Explain term={term} />
       </div>
       {children}
@@ -329,7 +329,7 @@ function Field({ id, label, helper, value, onChange, rows }) {
 function Record({ title, body, empty }) {
   return (
     <div className=" border border-hair bg-carbon-3 p-3.5">
-      <div className="mb-1 text-[12px] font-medium text-smoke">{title}</div>
+      <div className="mb-1 text-[12.5px] font-semibold text-ash">{title}</div>
       <p className="max-h-40 overflow-y-auto whitespace-pre-wrap text-[13px] leading-relaxed text-ash">
         {body || <span className="text-smoke">{empty}</span>}
       </p>

@@ -66,10 +66,10 @@ export default function StartTlsMachine({ session }) {
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <span className="sg-display flex items-center gap-2 text-[15px] font-semibold text-bone">
+        <span className="flex items-center gap-2 text-[15px] font-bold text-bone">
           Encryption upgrade path <Explain term="starttls" />
         </span>
-        <span className={`border px-2.5 py-1 font-code text-[11px] uppercase tracking-[0.12em] ${TONE[st.tone]}`}>{st.label}</span>
+        <span className={`rounded-md border px-2.5 py-1 text-[12px] font-bold ${TONE[st.tone]}`}>{st.label}</span>
       </div>
 
       {/* the circuit: a trace that runs until the protocol broke */}
@@ -100,7 +100,7 @@ export default function StartTlsMachine({ session }) {
                 {state === 'ok' ? <Check size={17} strokeWidth={2} /> : state === 'bad' ? <X size={18} strokeWidth={2.25} /> : <Minus size={16} strokeWidth={2} />}
                 {state === 'bad' && i === breakAt && <span className="absolute inset-0 animate-ping border border-signal" aria-hidden />}
               </span>
-              <span className={`mt-3 font-code text-[10.5px] uppercase leading-snug tracking-[0.08em] ${state === 'bad' ? 'text-signal' : state === 'ok' ? 'text-bone' : 'text-smoke'}`}>
+              <span className={`mt-3 block text-[12px] font-semibold leading-snug ${state === 'bad' ? 'text-signal' : state === 'ok' ? 'text-bone' : 'text-smoke'}`}>
                 {label}
               </span>
             </motion.div>

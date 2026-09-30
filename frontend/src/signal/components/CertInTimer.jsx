@@ -70,13 +70,13 @@ export default function CertInTimer({ deadline, size = 'sm' }) {
         <span className="absolute inset-0 flex items-center justify-center font-code text-[11px] text-smoke">6h</span>
       </div>
       <div>
-        <div className="flex items-center gap-1.5 font-code text-[11px] uppercase tracking-[0.12em] text-ash">
+        <div className="flex items-center gap-1.5 text-[13px] font-semibold text-ash">
           CERT-In reporting clock <Explain term="certIn" />
         </div>
-        <div className={`mt-1.5 font-dot text-[38px] font-black leading-none tabular ${remaining <= 0 ? 'animate-pulse' : ''}`} style={{ color }}>
+        <div className={`mt-1.5 font-code text-[34px] font-bold leading-none tabular ${remaining <= 0 ? 'animate-pulse' : ''}`} style={{ color }}>
           {remaining <= 0 ? '00:00:00' : hms(remaining)}
         </div>
-        <div className="mt-2 font-code text-[11px] uppercase tracking-[0.12em]" style={{ color }}>{t.label}</div>
+        <div className="mt-2 text-[12.5px] font-bold uppercase tracking-[0.04em]" style={{ color }}>{t.label}</div>
       </div>
     </div>
   )

@@ -1,11 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
-  darkMode: 'class',
+  darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     extend: {
       colors: {
-        // SIGNAL UI tokens (channel vars so opacity modifiers work: bg-signal/10)
+        // Paper-first tokens (channel vars so opacity modifiers work: bg-signal/10)
         carbon: 'rgb(var(--s-carbon) / <alpha-value>)',
         'carbon-2': 'rgb(var(--s-carbon-2) / <alpha-value>)',
         'carbon-3': 'rgb(var(--s-carbon-3) / <alpha-value>)',
@@ -22,9 +22,8 @@ export default {
         go: 'rgb(var(--s-go) / <alpha-value>)',
       },
       fontFamily: {
-        ui: ['"Archivo Variable"', 'system-ui', 'sans-serif'],
-        code: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
-        dot: ['"Doto Variable"', '"IBM Plex Mono"', 'monospace'],
+        ui: ['"Atkinson Hyperlegible"', 'system-ui', 'sans-serif'],
+        code: ['"Atkinson Hyperlegible Mono"', 'ui-monospace', 'monospace'],
       },
     },
   },

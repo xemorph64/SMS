@@ -1,10 +1,11 @@
 import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Lenis from 'lenis'
 import { Toaster } from 'sonner'
 import {
-  Siren, ScanLine, FolderTree, Microscope, Scale, Cpu, LogOut, SunMoon, Radio,
+  Siren, ScanLine, FolderTree, Microscope, Scale, Cpu, LogOut, Sun, Moon, SunMoon,
+  Menu as MenuIcon, Upload, Search, X as CloseIcon,
 } from 'lucide-react'
 
 import './signal.css'
@@ -13,7 +14,6 @@ import { AuthContext, useAuth } from '../lib/auth'
 import { ReportContext, roleInfo } from './lib/roles'
 import CaseRail from './components/CaseRail'
 import CommandPalette from './components/CommandPalette'
-import Dock from './components/Dock'
 import SignalField, { HeatProvider } from './components/SignalField'
 import { Loading } from './ui'
 
@@ -45,7 +45,7 @@ const NAV = [
 
 function useTheme() {
   const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem('sg-theme') || 'dark' } catch { return 'dark' }
+    try { return localStorage.getItem('sg-theme') || 'light' } catch { return 'light' }
   })
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -91,6 +91,9 @@ function useSpotlight() {
   }, [])
 }
 
+/**
+ * Live status line. Static (not a marquee) so it can always be read.
+ */
 function Ticker({ health, incidents }) {
   const detected = incidents.filter((i) => i.status === 'DETECTED').length
   const escalated = incidents.filter((i) => i.status === 'ESCALATED').length
@@ -98,27 +101,25 @@ function Ticker({ health, incidents }) {
   const breached = incidents.filter((i) =>
     i.certInClockDeadline && new Date(i.certInClockDeadline).getTime() < Date.now() &&
     (i.status === 'ESCALATED' || i.status === 'AWAITING_AUDIT')).length
-  const engine = !health ? 'CONNECTING' : health.status === 'UP' ? `ENGINE ${health.engine || 'ONLINE'} ${health.engineVersion || ''}` : health.reachable ? 'ENGINE DEGRADED' : 'API OFFLINE'
-  const items = [
-    [engine, health?.status === 'UP' ? 'go' : 'signal'],
-    [`${detected} AWAITING TRIAGE`, detected ? 'signal' : 'smoke'],
-    [`${escalated} IN RESPONSE`, escalated ? 'heat' : 'smoke'],
-    [`${gate} AT AUDIT GATE`, 'ash'],
-    [`${breached} CERT-IN SLA BREACHED`, breached ? 'signal' : 'smoke'],
-    ['PASSIVE MODE · 0 PACKETS TRANSMITTED', 'ice'],
-  ]
-  const row = (k) => (
-    <div className="flex shrink-0 items-center" aria-hidden={k === 1}>
-      {items.map(([t, c]) => (
-        <span key={t + k} className="flex items-center gap-2 px-6 font-code text-[10.5px] tracking-[0.14em]" style={{ color: `rgb(var(--s-${c}))` }}>
-          <span className="h-1 w-1" style={{ background: `rgb(var(--s-${c}))` }} /> {t}
-        </span>
-      ))}
-    </div>
-  )
+  const engineUp = health?.status === 'UP'
+  const engine = !health ? 'Connecting…' : engineUp ? `Engine online${health.engineVersion ? ` ${health.engineVersion}` : ''}` : health.reachable ? 'Engine degraded' : 'API offline'
+  const Dot = ({ c }) => <span className="h-1.5 w-1.5 rounded-full" style={{ background: `rgb(var(--s-${c}))` }} />
   return (
-    <div className="overflow-hidden border-b border-hair bg-carbon/60">
-      <div className="sg-marquee flex w-max py-1.5">{row(0)}{row(1)}</div>
+    <div className="overflow-hidden border-t border-hair bg-carbon/60">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-0.5 px-4 py-1.5 text-[12.5px] sm:px-6">
+        <span className="inline-flex items-center gap-2 font-semibold" style={{ color: `rgb(var(--s-${engineUp ? 'go' : 'signal'}))` }}>
+          <Dot c={engineUp ? 'go' : 'signal'} /> {engine}
+        </span>
+        <span className="inline-flex items-center gap-2 text-ash"><Dot c={detected ? 'signal' : 'hair-2'} /> {detected} awaiting triage</span>
+        <span className="inline-flex items-center gap-2 text-ash"><Dot c={escalated ? 'heat' : 'hair-2'} /> {escalated} in response</span>
+        <span className="hidden items-center gap-2 text-ash sm:inline-flex"><Dot c="hair-2" /> {gate} at audit gate</span>
+        <span className="inline-flex items-center gap-2 font-medium" style={{ color: `rgb(var(--s-${breached ? 'signal' : 'ash'}))` }}>
+          <Dot c={breached ? 'signal' : 'hair-2'} /> {breached} SLA breached
+        </span>
+        <span className="ml-auto hidden items-center gap-2 text-smoke lg:inline-flex">
+          <Dot c="ice" /> Passive mode · no packets transmitted
+        </span>
+      </div>
     </div>
   )
 }
@@ -139,9 +140,15 @@ function ScanWipe({ trigger }) {
   )
 }
 
+/**
+ * Two-pane workspace: a fixed sidebar for navigation (works at every width,
+ * screen-reader friendly) and a content column with a compact top bar.
+ * On phones the sidebar becomes an overlay drawer.
+ */
 function Shell({ health, children }) {
   const [theme, setTheme] = useTheme()
   const [palette, setPalette] = useState(false)
+  const [drawer, setDrawer] = useState(false)
   const [incidents, setIncidents] = useState([])
   const { role, logout } = useAuth()
   const { pathname } = useLocation()
@@ -151,7 +158,7 @@ function Shell({ health, children }) {
 
   useSmoothScroll()
   useSpotlight()
-  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  useEffect(() => { window.scrollTo(0, 0); setDrawer(false) }, [pathname])
 
   // Live counts for the ticker (same endpoint the command center uses).
   useEffect(() => {
@@ -170,71 +177,131 @@ function Shell({ health, children }) {
     { id: 'logout', group: 'Session', label: 'Sign out', icon: LogOut, action: signOut },
   ]
 
+  const sideNav = (
+    <nav aria-label="Primary" className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
+      <div className="sg-kicker mb-2 px-2">Workspace</div>
+      {nav.map((n) => (
+        <NavLink
+          key={n.to}
+          to={n.to}
+          className={({ isActive }) => `group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-[14px] font-semibold transition-colors ${
+            isActive || n.match(pathname) ? 'bg-carbon-3 text-bone' : 'text-ash hover:bg-carbon-3/60 hover:text-bone'
+          }`}
+        >
+          {(isActive) => (
+            <>
+              {(isActive || n.match(pathname)) && <motion.span layoutId="nav-rail" className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-signal" aria-hidden />}
+              <n.icon size={17} strokeWidth={1.8} className="shrink-0" />
+              {n.label}
+            </>
+          )}
+        </NavLink>
+      ))}
+    </nav>
+  )
+
+  const sideFoot = (
+    <div className="border-t border-hair p-3">
+      <div className="mb-2 flex items-center gap-2.5 px-1">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-carbon-3 text-[12px] font-bold text-ash" aria-hidden>
+          {info.short.slice(0, 2)}
+        </span>
+        <div className="min-w-0">
+          <div className="truncate text-[13px] font-semibold text-bone">{info.name}</div>
+          <div className="truncate text-[11.5px] leading-snug text-smoke">{info.duty}</div>
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={signOut}
+        className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-semibold text-ash transition-colors hover:bg-carbon-3 hover:text-signal"
+      >
+        <LogOut size={15} strokeWidth={1.8} /> Sign out
+      </button>
+    </div>
+  )
+
   return (
     <div className="sg-grain relative min-h-[100dvh]">
       <SignalField />
       <CommandPalette open={palette} setOpen={setPalette} items={commands} />
       {!reduce && <ScanWipe trigger={pathname} />}
 
-      <div className="sticky top-0 z-40 bg-carbon/75 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-[1320px] items-center gap-4 px-4 sm:px-6 lg:px-10">
-          <Link to="/incidents" className="flex shrink-0 items-center gap-3" aria-label="SecureMailScope home">
+      <div className="relative z-10 flex min-h-[100dvh] w-full">
+        {/* sidebar: fixed on desktop, drawer on phones */}
+        <aside className="sticky top-0 hidden h-[100dvh] w-[248px] shrink-0 flex-col border-r border-hair bg-carbon/85 backdrop-blur-xl lg:flex">
+          <Link to="/incidents" className="flex items-center gap-3 px-5 py-5" aria-label="SecureMailScope home">
             <Mark />
-            <span className="sg-display hidden text-[13px] font-bold tracking-[0.02em] text-bone xl:inline">SecureMailScope</span>
+            <span className="text-[15px] font-bold tracking-[-0.01em] text-bone">SecureMailScope</span>
           </Link>
-          <span aria-hidden className="hidden h-5 w-px bg-hair-2 sm:block" />
-          <div className="min-w-0 flex-1"><CaseRail seat={info.seat} /></div>
-          <button
-            type="button"
-            onClick={() => setPalette(true)}
-            className="hidden h-8 items-center gap-3 border border-hair-2 px-3 font-code text-[11px] uppercase tracking-[0.1em] text-smoke transition-colors hover:border-bone hover:text-bone md:inline-flex"
-          >
-            Command <kbd className="text-ash">⌘K</kbd>
-          </button>
-          <div className="group relative">
-            <button type="button" className="flex h-8 items-center gap-2 border border-hair-2 pl-2 pr-3 transition-colors hover:border-bone" aria-haspopup="menu">
-              <Radio size={14} strokeWidth={1.6} className="text-signal" />
-              <span className="font-code text-[11px] uppercase tracking-[0.1em] text-bone">{info.short}</span>
-            </button>
-            <div className="invisible absolute right-0 top-full z-50 w-64 translate-y-1 border border-hair-2 bg-carbon-2 p-1 opacity-0 shadow-2xl transition-all group-focus-within:visible group-focus-within:translate-y-2 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-2 group-hover:opacity-100" role="menu">
-              <div className="border-b border-hair px-3 py-3">
-                <div className="text-[13.5px] font-medium text-bone">{info.name}</div>
-                <div className="mt-0.5 text-[12px] leading-snug text-smoke">{info.duty}</div>
+          {sideNav}
+          {sideFoot}
+        </aside>
+        {drawer && (
+          <div className="fixed inset-0 z-[70] lg:hidden">
+            <button aria-label="Close menu" className="absolute inset-0 bg-carbon/70 backdrop-blur-sm" onClick={() => setDrawer(false)} />
+            <motion.aside
+              initial={reduce ? false : { x: -280 }}
+              animate={{ x: 0 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute inset-y-0 left-0 flex w-[264px] flex-col border-r border-hair bg-carbon-2"
+            >
+              <div className="flex items-center justify-between px-5 py-4">
+                <Link to="/incidents" className="flex items-center gap-3" aria-label="SecureMailScope home"><Mark /><span className="text-[15px] font-bold text-bone">SecureMailScope</span></Link>
+                <button type="button" onClick={() => setDrawer(false)} aria-label="Close menu" className="p-1.5 text-ash hover:text-bone"><CloseIcon size={18} /></button>
               </div>
-              <MenuBtn icon={SunMoon} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? 'Paper theme' : 'Carbon theme'}</MenuBtn>
-              <MenuBtn icon={LogOut} onClick={signOut} danger>Sign out</MenuBtn>
-            </div>
+              {sideNav}
+              {sideFoot}
+            </motion.aside>
           </div>
+        )}
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* top bar */}
+          <header className="sticky top-0 z-40 border-b border-hair bg-carbon/85 backdrop-blur-xl">
+            <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
+              <button type="button" onClick={() => setDrawer(true)} aria-label="Open menu" className="p-2 text-ash hover:text-bone lg:hidden">
+                <MenuIcon size={19} strokeWidth={1.8} />
+              </button>
+              <CaseRail seat={info.seat} />
+              <div className="ml-auto flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  aria-label={theme === 'dark' ? 'Switch to paper theme' : 'Switch to carbon theme'}
+                  title={theme === 'dark' ? 'Switch to paper theme' : 'Switch to carbon theme'}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-hair-2 text-smoke transition-colors hover:border-ash hover:text-bone"
+                >
+                  {theme === 'dark' ? <Sun size={15} strokeWidth={1.8} /> : <Moon size={15} strokeWidth={1.8} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPalette(true)}
+                  className="hidden h-9 items-center gap-2.5 rounded-md border border-hair-2 px-3 text-[12.5px] font-semibold text-smoke transition-colors hover:border-ash hover:text-bone md:inline-flex"
+                >
+                  <Search size={14} strokeWidth={2} /> Search <kbd className="text-[11px] text-smoke">⌘K</kbd>
+                </button>
+                <Link to="/analyst-dashboard" className="sg-btn-primary sg-btn-sm hidden sm:inline-flex">
+                  <Upload size={14} strokeWidth={2} /> Analyse PCAP
+                </Link>
+              </div>
+            </div>
+            <Ticker health={health} incidents={incidents} />
+          </header>
+
+          <main className="relative min-w-0 flex-1 px-5 pb-24 pt-8 sm:px-7">
+            <motion.div
+              key={pathname}
+              initial={reduce ? false : { opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <Suspense fallback={<Loading rows={4} />}>{children}</Suspense>
+            </motion.div>
+          </main>
         </div>
-        <Ticker health={health} incidents={incidents} />
       </div>
-
-      <main className="relative z-10 mx-auto w-full max-w-[1320px] px-4 pb-36 pt-10 sm:px-6 lg:px-10 lg:pt-14">
-        <motion.div
-          key={pathname}
-          initial={reduce ? false : { opacity: 0, y: 14, filter: 'blur(6px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          transition={{ duration: 0.5, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <Suspense fallback={<Loading rows={4} />}>{children}</Suspense>
-        </motion.div>
-      </main>
-
-      <Dock items={nav} onCommand={() => setPalette(true)} />
     </div>
-  )
-}
-
-function MenuBtn({ icon: Icon, children, onClick, danger }) {
-  return (
-    <button
-      type="button"
-      role="menuitem"
-      onClick={onClick}
-      className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-[13px] transition-colors hover:bg-carbon-4 ${danger ? 'text-signal' : 'text-ash hover:text-bone'}`}
-    >
-      <Icon size={14} strokeWidth={1.6} /> {children}
-    </button>
   )
 }
 
@@ -248,8 +315,8 @@ function ProtectedRoute({ children, allowedRoles }) {
 function NotFound() {
   return (
     <div className="py-24 text-center">
-      <div className="font-dot text-[96px] font-black leading-none text-signal">404</div>
-      <div className="sg-display mt-4 text-[18px] font-semibold text-bone">No signal on this channel</div>
+      <div className="text-[96px] font-bold leading-none text-signal tabular">404</div>
+      <div className="mt-4 text-[18px] font-semibold text-bone">No signal on this channel</div>
       <Link to="/" className="sg-btn-ghost mt-6">Return home</Link>
     </div>
   )
@@ -271,7 +338,7 @@ export default function App() {
   })
 
   useEffect(() => {
-    try { document.documentElement.dataset.theme = localStorage.getItem('sg-theme') || 'dark' } catch { /* ignore */ }
+    try { document.documentElement.dataset.theme = localStorage.getItem('sg-theme') || 'light' } catch { /* ignore */ }
     let cancelled = false
     fetchHealth().then((h) => { if (!cancelled) setHealth(h) })
     return () => { cancelled = true }

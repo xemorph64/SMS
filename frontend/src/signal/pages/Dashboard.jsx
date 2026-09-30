@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Download, RefreshCw, Orbit, Rows3, ArrowRight, KeyRound, ShieldOff, Sparkles } from 'lucide-react'
+import { Download, RefreshCw, ArrowRight, KeyRound, ShieldOff, Sparkles } from 'lucide-react'
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 import { useReport } from '../lib/roles'
@@ -8,10 +8,9 @@ import { useAuth } from '../../lib/auth'
 import { Coverage, HistoryAssessment } from '../components/Assessment'
 import { adaptBackendCapture, getCapture, retryRun } from '../../lib/api'
 import { bytes, datetime, sessionKind } from '../../lib/format'
-import ConstellationPanel from '../components/ConstellationPanel'
 import {
   Empty, Explain, Grade, gradeColor, HashText, Loading, Notice, PageHeader, Panel,
-  SectionTitle, Severity, Stat, Tabs, Tag,
+  SectionTitle, Severity, Stat, Tag,
 } from '../ui'
 
 export default function Dashboard() {
@@ -22,7 +21,6 @@ export default function Dashboard() {
   const [error, setError] = useState(null)
   const [rerunning, setRerunning] = useState(false)
   const [loading, setLoading] = useState(!report)
-  const [view, setView] = useState('constellation')
 
   // Same load contract as the classic dashboard (shared report cache).
   useEffect(() => {
@@ -188,22 +186,10 @@ export default function Dashboard() {
         <SectionTitle
           title="Sessions"
           hint={canOpenSession ? 'Every mail conversation in the capture. Open one to see its handshake, findings and raw bytes.' : 'Every mail conversation in the capture.'}
-          right={
-            <Tabs
-              value={view}
-              onChange={setView}
-              tabs={[
-                { id: 'constellation', label: 'Constellation', icon: Orbit },
-                { id: 'list', label: 'List', icon: Rows3 },
-              ]}
-            />
-          }
         />
 
         {sessions.length === 0 ? (
           <Panel><Empty title="No mail sessions found in this capture" /></Panel>
-        ) : view === 'constellation' ? (
-          <ConstellationPanel sessions={sessions} onSelect={openSession} canOpen={canOpenSession} />
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {sessions.map((s) => {

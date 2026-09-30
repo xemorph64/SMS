@@ -88,12 +88,12 @@ export default function Login() {
               <span className="h-2 w-2 bg-signal" />
               <span className="absolute -right-[3px] -top-[3px] h-1.5 w-1.5 bg-bone" />
             </span>
-            <span className="sg-display text-[13px] font-bold text-bone">SecureMailScope</span>
-            <span className="ml-2 hidden font-code text-[10.5px] uppercase tracking-[0.14em] text-smoke sm:inline">Passive mail forensics</span>
+            <span className="text-[14px] font-bold text-bone">SecureMailScope</span>
+            <span className="ml-2 hidden text-[12px] text-smoke sm:inline">Passive mail forensics</span>
           </div>
 
           <div className="pointer-events-none">
-            <h1 className="sg-display text-[44px] font-bold leading-[0.92] text-bone sm:text-[72px] xl:text-[96px]">
+            <h1 className="text-[40px] font-bold leading-[1.02] tracking-[-0.02em] text-bone sm:text-[64px] xl:text-[84px]">
               <Decode text="Touch nothing." className="block" />
               <span className="block text-signal"><Decode text="Read everything." delay={250} /></span>
             </h1>
@@ -105,10 +105,10 @@ export default function Login() {
             >
               Every SMTP, IMAP and POP3 session in a capture, rebuilt and graded against 35 NIST and RFC rules. Nothing is sent to the network.
             </motion.p>
-            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 font-code text-[10.5px] uppercase tracking-[0.12em] text-ash">
-              <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rotate-45 bg-signal" /> Cleartext mail</span>
+            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[13px] font-semibold text-ash">
+              <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-signal" /> Cleartext mail</span>
               <span className="inline-flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full border border-bone" /> TLS boundary</span>
-              <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rotate-45 bg-ice" /> Encrypted</span>
+              <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-ice" /> Encrypted</span>
             </div>
           </div>
         </section>
@@ -122,11 +122,11 @@ export default function Login() {
         >
           <div className="w-full">
             <div className="sg-kicker">Secure channel</div>
-            <h2 className="sg-display mt-2 text-[26px] font-bold text-bone">Sign in</h2>
+            <h2 className="mt-2 text-[26px] font-bold text-bone">Sign in</h2>
             <p className="mt-1 text-[14px] text-ash">Your role decides what you can see and do.</p>
 
             {error && (
-              <div role="alert" className="mt-6 border-l-2 border-signal bg-signal/10 px-4 py-2.5 font-code text-[12px] uppercase tracking-[0.08em] text-signal">
+              <div role="alert" className="mt-6 rounded-md border-l-2 border-signal bg-signal/10 px-4 py-2.5 text-[13px] font-semibold text-signal">
                 {error}
               </div>
             )}
@@ -170,13 +170,13 @@ export default function Login() {
                         selected ? 'bg-signal/10' : 'hover:bg-carbon-3'
                       }`}
                     >
-                      <span className={`font-dot text-[18px] font-bold leading-none ${selected ? 'text-signal' : 'text-smoke group-hover:text-ash'}`}>{p.ch}</span>
+                      <span className={`text-[18px] font-bold leading-none ${selected ? 'text-signal' : 'text-smoke group-hover:text-ash'}`}>{p.ch}</span>
                       <span className="min-w-0">
-                        <span className="block text-[14px] font-medium text-bone">{p.role}</span>
-                        <span className="block font-code text-[11px] text-smoke">{p.username} · {p.duty}</span>
+                        <span className="block text-[14px] font-semibold text-bone">{p.role}</span>
+                        <span className="block text-[12px] text-smoke">{p.username} · {p.duty}</span>
                       </span>
-                      <span className={`font-code text-[10.5px] uppercase tracking-[0.12em] ${selected ? 'text-signal' : 'text-hair-2 group-hover:text-ash'}`}>
-                        {selected ? 'Tuned' : 'Tune'}
+                      <span className={`text-[12.5px] font-semibold ${selected ? 'text-signal' : 'text-hair-2 group-hover:text-ash'}`}>
+                        {selected ? 'Selected' : 'Use'}
                       </span>
                     </motion.button>
                   )
