@@ -128,6 +128,17 @@ MailSentinel is now fully containerized. You do not need to install Python, Java
 - `sms-postgres`: A lightweight Postgres 16 database holding investigation metadata.
 - `sms-app`: A single unified container that serves the React frontend, runs the Spring Boot REST API, and executes the Python PCAP engine in an isolated virtual environment.
 
+### Deploying to the cloud (Vercel + Cloud Run)
+
+The dashboard is a static React build and belongs on Vercel; the API and engine need a container and belong on Cloud Run (with PostgreSQL from Neon or any managed provider). One script deploys the service:
+
+```bash
+SMS_DB_URL='postgresql://user:pass@host/db?sslmode=require' \
+  ./scripts/deploy-cloudrun.sh
+```
+
+Then set `VITE_API_BASE_URL` to the printed service URL in the Vercel project (Root Directory: `frontend`). The full walkthrough — environment reference, CORS, cost, and the limits of running the engine on Cloud Run — is in **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
+
 ---
 
 ## 7. Usage Guide

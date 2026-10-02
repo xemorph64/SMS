@@ -1,0 +1,88 @@
+name: CI
+
+# Frontend build and the full backend + engine test suites on every push.
+#
+# The backend suite is the two halves agreeing with each other: it uploads real
+# captures through the REST API and analyses them with the real Python engine,
+# which is why the job installs the engine (scripts/setup.sh — the same script
+# the Docker image runs) before running it. Without the engine the
+# engine-dependent tests skip and CI would say green about a build that cannot
+# analyse anything.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  frontend:
+    name: Build the dashboard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      # The built dashboard is what the jar serves and what Vercel deploys.
+      # Keeping it as an artifact lets a deployment workflow pick it up
+      # without rebuilding.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+
+  backend:
+    name: Backend and engine tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # One script, one procedure, one copy of the engine — the same promise the
+      # Dockerfile makes. Invoked through bash explicitly: the exec bit is not
+      # tracked for this file in git, so a fresh checkout cannot execute it
+      # directly. SMS_PYTHON is the only engine setting, and the Makefile
+      # already prints exactly this export line for local runs.
+      - name: Install the analysis engine
+        run: |
+          bash ../scripts/setup.sh --venv "$RUNNER_TEMP/venv" --quiet
+          echo "SMS_PYTHON=$RUNNER_TEMP/venv/bin/python" >> "$GITHUB_ENV"
+
+      - name: Run the test suite
+        run: mvn -B test
+
+      - name: Summarise
+        if: always()
+        run: |
+          {
+            echo "### Backend tests"
+            if compgen -G "target/surefire-reports/*.txt" > /dev/null; then
+              grep -h "Tests run" target/surefire-reports/*.txt | sed 's/^/- /'
+            else
+              echo "_no surefire reports were produced_"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -35,7 +35,14 @@ spring:
       path: /h2-console
 
 server:
-  port: 8080
+  # Cloud Run, Render, Railway and Heroku hand the port in PORT; everywhere else
+  # 8080. Binding the variable rather than a constant is the whole difference
+  # between a service that answers on those platforms and one that is killed
+  # for never opening the port it was told to.
+  port: ${PORT:8080}
+  # Behind the platform's TLS terminator (Cloud Run, Render, Fly), honour
+  # X-Forwarded-* so the app sees https and the real client address.
+  forward-headers-strategy: framework
   error:
     include-message: always
 
@@ -47,6 +54,15 @@ ms:
     timeout-seconds: 300
     ml-enabled: true
     max-upload-bytes: 2147483648
+  cors:
+    # Comma-separated origins allowed to call /api. Defaults to the Vite dev
+    # server; a split deployment sets SMS_CORS_ORIGINS to the dashboard's URL
+    # (wildcards such as https://*.vercel.app cover preview deployments).
+    allowed-origins: ${SMS_CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+  jwt:
+    # HS256 signing key. Empty means the built-in development secret; every
+    # deployment must set SMS_JWT_SECRET (openssl rand -base64 48).
+    secret: ${SMS_JWT_SECRET:}
 
 logging:
   level:

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import { useAuth } from '../../lib/auth'
+import { apiUrl } from '../../lib/api'
 import Scene3D from '../three/Scene3D'
 import SignalField from '../components/SignalField'
 import { Decode, Magnetic } from '../ui'
@@ -40,20 +41,15 @@ export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
 
-  const pick = (account) => {
-    setUsername(account)
-    setPassword('password')
+  const signIn = async (u, p) => {
+    if (busy) return
     setError(null)
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
     setBusy(true)
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username: u, password: p }),
       })
       if (res.ok) {
         const data = await res.json()
@@ -67,6 +63,18 @@ export default function Login() {
     } finally {
       setBusy(false)
     }
+  }
+
+  // One tap on a demo channel fills the form and signs in straight away.
+  const pick = (account) => {
+    setUsername(account)
+    setPassword('password')
+    signIn(account, 'password')
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    signIn(username, password)
   }
 
   return (
@@ -124,6 +132,7 @@ export default function Login() {
             <div className="sg-kicker">Secure channel</div>
             <h2 className="mt-2 text-[26px] font-bold text-bone">Sign in</h2>
             <p className="mt-1 text-[14px] text-ash">Your role decides what you can see and do.</p>
+            <p className="mt-1 text-[13px] text-smoke">First time? Pick a demo channel below — one tap signs you in.</p>
 
             {error && (
               <div role="alert" className="mt-6 rounded-md border-l-2 border-signal bg-signal/10 px-4 py-2.5 text-[13px] font-semibold text-signal">
@@ -140,7 +149,7 @@ export default function Login() {
               <div>
                 <label className="sg-label" htmlFor="login-password">Passphrase</label>
                 <input id="login-password" type="password" className="sg-input" value={password} autoComplete="current-password"
-                  onChange={(e) => setPassword(e.target.value)} required />
+                  onChange={(e) => setPassword(e.target.value)} placeholder="password" required />
               </div>
               <Magnetic className="w-full" strength={0.12}>
                 <button type="submit" className="sg-btn-primary h-12 w-full justify-between px-5" disabled={busy}>
@@ -151,10 +160,11 @@ export default function Login() {
             </form>
 
             <div className="mt-9">
-              <div className="mb-3 flex items-baseline justify-between">
+              <div className="mb-1 flex items-baseline justify-between">
                 <span className="sg-label mb-0">Demo channels</span>
                 <span className="font-code text-[11px] text-smoke">pass: <span className="text-ash">password</span></span>
               </div>
+              <p className="mb-3 text-[12px] text-smoke">Tap one to open it instantly — no typing needed.</p>
               <div className="border-t border-hair">
                 {DEMO_PROFILES.map((p, i) => {
                   const selected = username === p.username && password === 'password'
@@ -163,6 +173,7 @@ export default function Login() {
                       key={p.username}
                       type="button"
                       onClick={() => pick(p.username)}
+                      aria-label={`Sign in as ${p.role} (${p.username})`}
                       initial={{ opacity: 0, x: 12 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.5, delay: 0.45 + i * 0.06, ease }}
@@ -175,8 +186,8 @@ export default function Login() {
                         <span className="block text-[14px] font-semibold text-bone">{p.role}</span>
                         <span className="block text-[12px] text-smoke">{p.username} · {p.duty}</span>
                       </span>
-                      <span className={`text-[12.5px] font-semibold ${selected ? 'text-signal' : 'text-hair-2 group-hover:text-ash'}`}>
-                        {selected ? 'Selected' : 'Use'}
+                      <span className={`text-[12.5px] font-semibold ${selected ? 'text-signal' : 'text-signal group-hover:text-bone'}`}>
+                        {busy && selected ? 'Opening…' : selected ? 'Selected' : 'Use →'}
                       </span>
                     </motion.button>
                   )

@@ -1,0 +1,81 @@
+# Render + Vercel + Neon: the free-stack deployment for MailSentinel
+#
+# Architecture:
+#   browser -> Vercel (static React dashboard, root dir frontend)
+#             -> Cloud Run (Spring Boot API + Python engine, built from this
+#                Dockerfile)   <- optional, the repo also deploys a single
+#                image that serves API+UI on one origin
+#             -> Neon (PostgreSQL)
+#
+# Prerequisites:
+#   - Neon project (free tier). Create one at neon.tech, then copy the
+#     connection string (postgresql://user:pass@host/db?sslmode=require) from
+#     the Neon console. It is already configured in .neon/neon.ts and
+#     .env.local for local/script use.
+#   - Frontend on Vercel: import the repo at vercel.com/new, set Root
+#     Directory to `frontend`, add environment variable
+#     VITE_API_BASE_URL=<Cloud Run URL> (no trailing slash).
+#   - Backend on Render: create a Web Service from the repo's Dockerfile,
+#     add the same SMS_DB_URL from Neon as an environment variable (or a
+#     Render secret), and add SMS_JWT_SECRET (HS256 key, optional — generated
+#     on first deploy if unset).
+#
+# Deploy the whole stack locally (no cloud billing needed):
+#   ./scripts/setup.sh && docker compose up --build -d
+#
+# YouTube/Video reference: docs/ARCHITECTURE.md
+
+api_url=''
+vercel_project=''
+database_url=''
+
+# Render deployment notes (kept for the repo README/ARCHITECTURE docs):
+#   - Singly build the frontend, backend, and Python engine in one Dockerfile.
+#   - Render's free tier spins down after inactivity; backend responses then
+#     take ~30-60s while a new instance wakes up.
+#   - The image serves the dashboard, so there is no separate Vercel build step
+#     for the API-only container — Vercel provides the static UI only.
+
+usage() {
+  echo "Usage: $0 [options]"
+  echo "  --api-url <url>           Full URL of the API service"
+  echo "  --vercel-project <name>   Vercel project name for the dashboard"
+  echo "  --database-url <url>      Neon connection string"
+  echo "  --render-url <url>        Render service URL (if deploying there)"
+  exit 1
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --api-url)
+      api_url="$2"
+      shift 2
+      ;;
+    --vercel-project)
+      vercel_project="$2"
+      shift 2
+      ;;
+    --database-url)
+      database_url="$2"
+      shift 2
+      ;;
+    --render-url)
+      render_url="$2"
+      shift 2
+      ;;
+    *)
+      usage
+      ;;
+  esac
+done
+
+if [[ -z "$api_url" ]]; then
+  echo "Missing required variable: --api-url"
+  usage
+fi
+
+echo "MailSentinel deployment variables:"
+echo "  API URL:          $api_url"
+echo "  Vercel project:   $vercel_project"
+echo "  Neon database:    $database_url"
+echo "  Render URL:       $render_url"

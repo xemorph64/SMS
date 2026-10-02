@@ -12,11 +12,25 @@
  * backend like any upload.
  */
 
+/*
+ * Where the API lives.
+ *
+ * Empty by default, because in development the Vite proxy forwards /api to
+ * :8080 and in the packaged jar the API and the UI share an origin — both cases
+ * want same-origin relative paths. A deployment that splits the two (dashboard
+ * on Vercel, service on Cloud Run) sets VITE_API_BASE_URL at build time to the
+ * service URL; every request below then goes there directly.
+ */
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
+
+/** Absolute URL for an API path — safe for fetch and for <a href> alike. */
+export const apiUrl = (path) => `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+
 export const fetchWithAuth = async (url, options = {}) => {
   const token = localStorage.getItem('sms-token');
   const headers = { ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  return fetch(url, { ...options, headers });
+  return fetch(apiUrl(url), { ...options, headers });
 };
 
 
@@ -93,11 +107,11 @@ export async function deleteCapture(id) {
 }
 
 export function reportJsonUrl(id) {
-  return `/api/captures/${id}/report.json`
+  return apiUrl(`/api/captures/${id}/report.json`)
 }
 
 export function reportHtmlUrl(id) {
-  return `/api/captures/${id}/report.html`
+  return apiUrl(`/api/captures/${id}/report.html`)
 }
 
 /**
@@ -110,7 +124,7 @@ export function reportHtmlUrl(id) {
  * document with nothing installed, identically in every deployment.
  */
 export function reportPrintUrl(id) {
-  return `/api/captures/${id}/report.html?print=1`
+  return apiUrl(`/api/captures/${id}/report.html?print=1`)
 }
 
 /*

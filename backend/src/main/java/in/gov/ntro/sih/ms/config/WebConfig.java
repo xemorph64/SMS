@@ -1,6 +1,7 @@
 package in.gov.ntro.sih.ms.config;
 
 import java.io.IOException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -41,11 +42,27 @@ import org.springframework.web.servlet.resource.PathResourceResolver;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+    /**
+     * Origins the dashboard may call the API from, comma-separated.
+     *
+     * <p>Local development needs only the Vite dev server. A split deployment
+     * — dashboard on Vercel, service on Cloud Run — adds the dashboard's URL,
+     * through {@code SMS_CORS_ORIGINS}. Entries may carry a {@code *}
+     * wildcard in the host ({@code https://*.vercel.app} matches every preview
+     * deployment of one project), which is why these are origin *patterns*.
+     */
+    private final String[] allowedOrigins;
+
+    public WebConfig(@Value("${ms.cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173}")
+                     String allowedOrigins) {
+        this.allowedOrigins = allowedOrigins.split(",\\s*");
+    }
+
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:5173", "http://127.0.0.1:5173")
-                .allowedMethods("GET", "POST", "DELETE", "OPTIONS")
+                .allowedOriginPatterns(allowedOrigins)
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*");
     }
 
