@@ -339,9 +339,52 @@ export default function App() {
 
   useEffect(() => {
     try { document.documentElement.dataset.theme = localStorage.getItem('sg-theme') || 'light' } catch { /* ignore */ }
+
+    // One probe at mount latched "API offline" for the whole session: Render's
+    // free instance sleeps after ~15 min idle and Spring Boot needs ~2.5 min to
+    // wake, while each probe gives up after 4s. Retry on a backoff that spans
+    // the wake window — staying on "Connecting…" rather than crying offline —
+    // then surface the result and keep polling so the badge recovers without a
+    // reload and notices when the instance sleeps again.
     let cancelled = false
-    fetchHealth().then((h) => { if (!cancelled) setHealth(h) })
-    return () => { cancelled = true }
+    let timer = null
+    let inFlight = false
+    let miss = 0
+    const WAKE_DELAYS = [3000, 5000, 8000, 12000, 20000, 30000, 45000, 60000] // ≈ 3 min
+    const POLL_MS = 30000
+
+    const probe = async () => {
+      if (cancelled || inFlight) return
+      inFlight = true
+      const h = await fetchHealth()
+      inFlight = false
+      if (cancelled) return
+      if (h.reachable) {
+        miss = 0
+        setHealth(h)
+        timer = setTimeout(probe, POLL_MS)
+        return
+      }
+      miss += 1
+      setHealth(miss > WAKE_DELAYS.length ? h : null)
+      timer = setTimeout(probe, miss <= WAKE_DELAYS.length ? WAKE_DELAYS[miss - 1] : POLL_MS)
+    }
+
+    // Returning to the tab re-probes at once — the instance may have woken (or
+    // slept) while the page was hidden.
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible' || inFlight) return
+      clearTimeout(timer)
+      probe()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
+    probe()
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [])
 
   const login = (jwt) => {
