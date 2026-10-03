@@ -51,7 +51,10 @@ No schema work is needed. Flyway runs migrations `V1`–`V6` on first boot, and
      unset Render generates one on first deploy and reuses it, so logins
      survive rebuilds.
    - `SMS_CORS_ORIGINS` — comma-separated origins allowed to call `/api`.
-     Default: `https://*.vercel.app`
+     Default: `http://localhost:5173,http://127.0.0.1:5173` (dev only), so on
+     Render it must be set to the dashboard's URL, e.g.
+     `https://<project>.vercel.app` — wildcards in the host work
+     (`https://*.vercel.app`), and changing it triggers a redeploy by itself.
 4. Render's free tier **sleeps after ~15 minutes of inactivity**; the first
    request after waking costs ~30-60s (JVM + engine import). For a live demo
    you can bump to a starter plan for always-ready instances.
