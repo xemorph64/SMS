@@ -1,6 +1,7 @@
 package in.gov.ntro.sih.ms.config;
 
 import java.io.IOException;
+import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -55,7 +56,26 @@ public class WebConfig implements WebMvcConfigurer {
 
     public WebConfig(@Value("${ms.cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173}")
                      String allowedOrigins) {
-        this.allowedOrigins = allowedOrigins.split(",\\s*");
+        this.allowedOrigins = parse(allowedOrigins);
+    }
+
+    /**
+     * Splits the configured origins and repairs the ways they are typically
+     * mistyped in a platform console — surrounding quotes when a value is
+     * pasted with its shell quoting, and a trailing slash copied from a URL.
+     * A misquoted entry silently rejects every browser, so fixing it here is
+     * cheaper than an afternoon of debugging a 403 preflight.
+     */
+    private static String[] parse(String raw) {
+        if (raw == null || raw.isBlank()) {
+            raw = "http://localhost:5173,http://127.0.0.1:5173";
+        }
+        return Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .map(s -> s.replaceAll("^[\"']+", "").replaceAll("[\"']+$", ""))
+                .map(s -> s.replaceAll("/+$", ""))
+                .filter(s -> !s.isEmpty())
+                .toArray(String[]::new);
     }
 
     @Override
