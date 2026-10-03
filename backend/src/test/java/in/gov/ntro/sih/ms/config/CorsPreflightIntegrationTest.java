@@ -2,14 +2,13 @@ package in.gov.ntro.sih.ms.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
@@ -18,6 +17,12 @@ import org.springframework.test.context.ActiveProfiles;
  * paste produces. The preflight carries no Authorization header by design, so
  * it must succeed ahead of the {@code /api/** authenticated()} rule — an MVC
  * CorsRegistry mapping cannot make that promise, an ordered CorsFilter can.
+ *
+ * <p>Uses {@link HttpClient} rather than TestRestTemplate on purpose: the
+ * {@code HttpURLConnection} underneath TestRestTemplate treats
+ * {@code Access-Control-Request-*} as restricted headers and silently drops
+ * them, which turns the preflight into an ordinary OPTIONS and defeats the
+ * very thing this test checks.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = "ms.cors.allowed-origins=\"https://sms-986jp6b9g-xemorph64s-projects.vercel.app/\"")
@@ -27,28 +32,34 @@ class CorsPreflightIntegrationTest {
     private static final String VERCEL_ORIGIN =
             "https://sms-986jp6b9g-xemorph64s-projects.vercel.app";
 
-    @Autowired private TestRestTemplate rest;
+    @LocalServerPort private int port;
 
-    private ResponseEntity<String> preflight(String origin) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set(HttpHeaders.ORIGIN, origin);
-        headers.set(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET");
-        headers.set(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "authorization");
-        return rest.exchange("/api/incidents", HttpMethod.OPTIONS,
-                new org.springframework.http.HttpEntity<>(null, headers), String.class);
+    private HttpResponse<String> preflight(String origin) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(
+                        URI.create("http://localhost:" + port + "/api/incidents"))
+                .header("Origin", origin)
+                .header("Access-Control-Request-Method", "GET")
+                .header("Access-Control-Request-Headers", "authorization")
+                .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                .build();
+        return HttpClient.newHttpClient()
+                .send(request, HttpResponse.BodyHandlers.ofString());
     }
 
     @Test
-    void configuredOriginPassesPreflightWithoutCredentials() {
-        ResponseEntity<String> response = preflight(VERCEL_ORIGIN);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getHeaders().getAccessControlAllowOrigin()).isEqualTo(VERCEL_ORIGIN);
-        assertThat(response.getHeaders().getAccessControlAllowMethods()).contains(HttpMethod.GET);
+    void configuredOriginPassesPreflightWithoutCredentials() throws Exception {
+        HttpResponse<String> response = preflight(VERCEL_ORIGIN);
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.headers().firstValue("Access-Control-Allow-Origin"))
+                .contains(VERCEL_ORIGIN);
+        String allowMethods = response.headers()
+                .firstValue("Access-Control-Allow-Methods").orElse("");
+        assertThat(allowMethods).contains("GET");
     }
 
     @Test
-    void unknownOriginIsRejected() {
-        assertThat(preflight("https://evil.example.com").getStatusCode())
-                .isEqualTo(HttpStatus.FORBIDDEN);
+    void unknownOriginIsRejected() throws Exception {
+        assertThat(preflight("https://evil.example.com").statusCode())
+                .isEqualTo(403);
     }
 }
