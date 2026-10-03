@@ -2,6 +2,9 @@ package in.gov.ntro.sih.ms.config;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -43,6 +46,12 @@ import org.springframework.web.servlet.resource.PathResourceResolver;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
+    private static final Logger log = LoggerFactory.getLogger(WebConfig.class);
+
+    /** Backticks, BOM, zero-width and bidi characters that survive a copy-paste. */
+    private static final Pattern JUNK =
+            Pattern.compile("[`\\u00A0\\u200B\\u200C\\u200D\\u2060\\uFEFF\\u200E\\u200F]");
+
     /**
      * Origins the dashboard may call the API from, comma-separated.
      *
@@ -57,20 +66,23 @@ public class WebConfig implements WebMvcConfigurer {
     public WebConfig(@Value("${ms.cors.allowed-origins:http://localhost:5173,http://127.0.0.1:5173}")
                      String allowedOrigins) {
         this.allowedOrigins = parse(allowedOrigins);
+        log.info("CORS allowed origin patterns: {}", Arrays.toString(this.allowedOrigins));
     }
 
     /**
      * Splits the configured origins and repairs the ways they are typically
-     * mistyped in a platform console — surrounding quotes when a value is
-     * pasted with its shell quoting, and a trailing slash copied from a URL.
-     * A misquoted entry silently rejects every browser, so fixing it here is
-     * cheaper than an afternoon of debugging a 403 preflight.
+     * mangled in a platform console — surrounding quotes from pasted shell
+     * values, backticks and invisible zero-width characters copied from chat
+     * or docs, and a trailing slash copied from a URL. Any of those silently
+     * rejects every browser preflight, which is indistinguishable from a
+     * missing origin when you are staring at a 403.
      */
-    private static String[] parse(String raw) {
+    static String[] parse(String raw) {
         if (raw == null || raw.isBlank()) {
             raw = "http://localhost:5173,http://127.0.0.1:5173";
         }
         return Arrays.stream(raw.split(","))
+                .map(s -> JUNK.matcher(s).replaceAll(""))
                 .map(String::trim)
                 .map(s -> s.replaceAll("^[\"']+", "").replaceAll("[\"']+$", ""))
                 .map(s -> s.replaceAll("/+$", ""))
