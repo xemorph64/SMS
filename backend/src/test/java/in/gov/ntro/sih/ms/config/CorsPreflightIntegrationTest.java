@@ -25,7 +25,17 @@ import org.springframework.test.context.ActiveProfiles;
  * very thing this test checks.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "ms.cors.allowed-origins=\"https://sms-986jp6b9g-xemorph64s-projects.vercel.app/\"")
+        properties = {
+                "ms.cors.allowed-origins=\"https://sms-986jp6b9g-xemorph64s-projects.vercel.app/\"",
+                // Boot on its own in-memory database with its own queue switch.
+                // The suite's application-test.yml disables the worker via
+                // sms.jobs.enabled, but the bean is gated on ms.jobs.enabled,
+                // so a second context would otherwise start a live AnalysisQueue:
+                // its ApplicationReadyEvent recoverInterrupted() and its 1s PENDING
+                // poller race against InvestigationFlowTest on the shared database.
+                "ms.jobs.enabled=false",
+                "spring.datasource.url=jdbc:h2:mem:corstest;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
+        })
 @ActiveProfiles("test")
 class CorsPreflightIntegrationTest {
 
