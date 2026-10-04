@@ -290,8 +290,12 @@ class Session:
 
     @property
     def asset_key(self) -> str:
-        """Identity of the server this session was talking to."""
-        return f"{self.server_name or self.server.ip}:{self.server.port}"
+        """
+        Identity of the server this session was talking to: the endpoint, not
+        the SNI. Several boxes behind one name can be configured differently,
+        and merging them hides which one needs fixing.
+        """
+        return f"{self.server.ip}:{self.server.port}"
 
     def worst_severity(self) -> Optional[Severity]:
         if not self.findings:

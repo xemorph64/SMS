@@ -81,6 +81,8 @@ def posture_of(p: ServerProfile) -> str:
     definition of the label, never a predictor over observations.
     """
     encrypted = p.tls_version > 0
+    # EC key sizes are not RSA sizes: P-256 is ~RSA-3072 (SP 800-57 Table 2).
+    cert_bits = p.cert_key_bits * 12 if p.cert_key_algo == 3 else p.cert_key_bits
 
     # --- critical: the traffic is readable, or the crypto is broken --------
     if not encrypted:
@@ -95,7 +97,7 @@ def posture_of(p: ServerProfile) -> str:
         return "critical"
     if p.cert_days_to_expiry < 0:                 # expired at capture
         return "critical"
-    if p.cert_key_bits < 1024 or p.kex_bits < 1024:
+    if cert_bits < 1024 or p.kex_bits < 1024:
         return "critical"
 
     # --- vulnerable: standards-violating but not trivially breakable -------
@@ -107,7 +109,7 @@ def posture_of(p: ServerProfile) -> str:
         return "vulnerable"
     if p.cert_sig_hash <= 1:                      # SHA-1 / MD5
         return "vulnerable"
-    if p.cert_key_bits < 2048 or p.kex_bits < 2048:   # SP 800-131A floor
+    if cert_bits < 2048 or p.kex_bits < 2048:   # SP 800-131A floor
         return "vulnerable"
 
     # --- weak: sound primitives, defective deployment ----------------------
@@ -203,6 +205,7 @@ def sample_profile(rng: random.Random, index: int) -> ServerProfile:
         self_signed = int(rng.random() < 0.45)
 
     chain_valid = 0 if self_signed else int(rng.random() < 0.94)
+    starttls = int(rng.random() < 0.5)
     name_match = int(rng.random() < 0.94)
 
     p = ServerProfile(
@@ -212,7 +215,10 @@ def sample_profile(rng: random.Random, index: int) -> ServerProfile:
         forward_secrecy=fs, cert_key_bits=cert_bits, cert_key_algo=cert_algo,
         cert_sig_hash=sig, cert_days_to_expiry=expiry,
         cert_self_signed=self_signed, chain_valid=chain_valid, name_match=name_match,
-        starttls_offered=1, starttls_completed=1, cleartext_auth=0,
+        # Implicit TLS (465/993/995) never negotiates STARTTLS, so a passive
+        # observer records offered=0, completed=0 for it. Without these rows a
+        # healthy implicit-TLS server is out of distribution for the model.
+        starttls_offered=starttls, starttls_completed=starttls, cleartext_auth=0,
         role_is_relay=int(rng.random() < 0.35),
     )
     p.posture = posture_of(p)
@@ -241,7 +247,8 @@ def _row_from_profile(p: ServerProfile, rng: random.Random, mask_cert: bool) -> 
         return float(value) if cert_visible else MISSING
 
     ext_count = float(rng.randint(6, 18)) if encrypted else 0.0
-    offered = float(rng.randint(24, 70) if p.tls_version >= 12 else rng.randint(8, 30)) \
+    # Clients range from a pinned single suite to a browser-style list of 70.
+    offered = float(rng.randint(1, 70) if p.tls_version >= 12 else rng.randint(1, 30)) \
         if encrypted else 0.0
 
     values = {

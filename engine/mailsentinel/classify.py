@@ -143,4 +143,4 @@ def classify_role(protocol: Protocol, server_port: int) -> Role:
 
 def is_email_stream(protocol: Protocol, stream: TcpStream) -> bool:
     """Filter out non-mail conversations that happen to share the capture."""
-    return True
+    return protocol != Protocol.UNKNOWN

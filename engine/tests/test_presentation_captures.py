@@ -33,6 +33,8 @@ def test_before_after_snapshots_match_servers_and_show_remediation():
     identity = lambda s: (s.protocol, s.server_name, s.server.ip, s.server.port)
     assert {identity(s) for s in before.sessions} == {identity(s) for s in after.sessions}
     assert len({identity(s) for s in before.sessions}) == 3
+    # Three boxes behind one SNI are three servers, so each fix names its box.
+    assert sorted(a.key for a in before.assets) == ['203.0.113.40:993', '203.0.113.41:993', '203.0.113.42:993']
     assert before.capture.last_packet_time < after.capture.first_packet_time
     assert before.capture.sha256 != after.capture.sha256
     assert all(s.server_name == 'example.com' for s in before.sessions + after.sessions)

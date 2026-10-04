@@ -43,6 +43,8 @@ def test_label_ladder_is_ordered():
     assert posture_of(ServerProfile(**{**base, "tls_version": 10})) == "vulnerable"
     assert posture_of(ServerProfile(**{**base, "forward_secrecy": 0})) == "vulnerable"
     assert posture_of(ServerProfile(**{**base, "cert_key_bits": 1536})) == "vulnerable"
+    # P-256 is ~RSA-3072, not a 256-bit RSA key: an EC cert must not read as broken.
+    assert posture_of(ServerProfile(**{**base, "cert_key_bits": 256, "cert_key_algo": 3})) == "secure"
     assert posture_of(ServerProfile(**{**base, "cert_days_to_expiry": -1})) == "critical"
     assert posture_of(ServerProfile(**{**base, "cipher_mode": 1})) == "critical"
     assert posture_of(ServerProfile(**{**base, "tls_version": 0})) == "critical"
