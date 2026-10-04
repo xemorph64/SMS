@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Braces, FileText, Printer, Copy, Check } from 'lucide-react'
 import { useReport } from '../lib/roles'
-import { reportHtmlUrl, reportJsonUrl, reportPrintUrl, fetchWithAuth, getCapture, adaptBackendCapture } from '../../lib/api'
+import { toast } from 'sonner'
+import { fetchReport, getCapture, adaptBackendCapture } from '../../lib/api'
 import { Empty, Explain, HashText, Loading, PageHeader, Panel } from '../ui'
 
 /*
@@ -28,34 +29,48 @@ export default function ExportPage() {
     return () => { cancelled = true }
   }, [id, loaded, setReport])
 
-  const downloadJson = async (e) => {
-    e.preventDefault()
-    try {
-      const res = await fetchWithAuth(reportJsonUrl(id))
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `mailsentinel-${report.report?.capture?.filename || 'report'}.json`
-      a.click()
-      window.URL.revokeObjectURL(url)
-    } catch (err) {
-      console.error(err)
-    }
+  const [busy, setBusy] = useState(null)
+  const base = `mailsentinel-${(report?.report?.capture?.filename || `capture-${id}`).replace(/\.[^.]+$/, '')}`
+
+  const download = async (format) => {
+    const blob = await fetchReport(id, format)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${base}.${format}`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 
-  const openHtml = async (e, print = false) => {
+  // Printed from a hidden iframe in this page: a window opened after an await
+  // is no longer a user gesture, and popup blockers silently swallow it.
+  const printPdf = async () => {
+    const html = await (await fetchReport(id, 'html')).text()
+    const frame = document.createElement('iframe')
+    frame.setAttribute('aria-hidden', 'true')
+    frame.style.cssText = 'position:fixed;width:0;height:0;border:0;right:0;bottom:0'
+    frame.onload = () => {
+      frame.contentDocument.title = base // becomes the suggested PDF file name
+      frame.contentWindow.focus()
+      frame.contentWindow.print()
+      setTimeout(() => frame.remove(), 60000)
+    }
+    frame.srcdoc = html
+    document.body.appendChild(frame)
+  }
+
+  const run = (key, fn) => async (e) => {
     e.preventDefault()
+    if (busy) return
+    setBusy(key)
     try {
-      const res = await fetchWithAuth(print ? reportPrintUrl(id) : reportHtmlUrl(id))
-      const blob = await res.blob()
-      let htmlText = await blob.text()
-      if (print) htmlText += '<script>window.onload = function() { window.print(); }</script>'
-      const url = window.URL.createObjectURL(new Blob([htmlText], { type: 'text/html' }))
-      window.open(url, '_blank')
-      setTimeout(() => window.URL.revokeObjectURL(url), 10000)
+      await fn()
     } catch (err) {
-      console.error(err)
+      toast.error(`Export failed: ${err.message}`)
+    } finally {
+      setBusy(null)
     }
   }
 
@@ -74,7 +89,7 @@ export default function ExportPage() {
       icon: Printer,
       title: 'PDF',
       body: 'Print-ready forensic case file with proper page breaks. Opens your browser\'s print dialog; choose "Save as PDF".',
-      action: (e) => openHtml(e, true),
+      action: run('pdf', printPdf),
       cta: 'Save as PDF',
       primary: true,
     },
@@ -82,14 +97,14 @@ export default function ExportPage() {
       icon: FileText,
       title: 'HTML',
       body: 'A self-contained report that opens in any browser, offline, with every piece of evidence embedded.',
-      action: (e) => openHtml(e, false),
-      cta: 'Open HTML',
+      action: run('html', () => download('html')),
+      cta: 'Download HTML',
     },
     {
       icon: Braces,
       title: 'JSON',
       body: 'The complete machine-readable record for a SIEM, a ticketing system or a CERT-In submission.',
-      action: downloadJson,
+      action: run('json', () => download('json')),
       cta: 'Download JSON',
     },
   ]
@@ -135,9 +150,9 @@ export default function ExportPage() {
               </div>
               <h2 className="text-[16px] font-semibold text-bone">{f.title}</h2>
               <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-ash">{f.body}</p>
-              <a href="#" onClick={f.action} className={`${f.primary ? 'sg-btn-primary' : 'sg-btn-ghost'} mt-5 w-full`}>
-                {f.cta}
-              </a>
+              <button type="button" onClick={f.action} disabled={!!busy} className={`${f.primary ? 'sg-btn-primary' : 'sg-btn-ghost'} mt-5 w-full`}>
+                {busy === f.title.toLowerCase() ? 'Preparing…' : f.cta}
+              </button>
             </Panel>
           )
         })}

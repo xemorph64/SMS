@@ -24,7 +24,8 @@
 export const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 
 /** Absolute URL for an API path — safe for fetch and for <a href> alike. */
-export const apiUrl = (path) => `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+export const apiUrl = (path) =>
+  /^https?:\/\//.test(path) ? path : `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
 
 export const fetchWithAuth = async (url, options = {}) => {
   const token = localStorage.getItem('sms-token');
@@ -106,25 +107,19 @@ export async function deleteCapture(id) {
   if (!res.ok && res.status !== 204) throw new Error('could not delete that capture')
 }
 
-export function reportJsonUrl(id) {
-  return apiUrl(`/api/captures/${id}/report.json`)
-}
-
-export function reportHtmlUrl(id) {
-  return apiUrl(`/api/captures/${id}/report.html`)
-}
-
 /**
- * The same report, opened so the browser prints it.
+ * A stored report as a Blob, in 'json' or 'html'.
  *
  * There is no server-side PDF endpoint. There was one, backed by WeasyPrint,
  * and it needed Pango and cairo — native libraries that install in a container
  * and usually not on a laptop, so it answered 501 wherever anyone used it. The
- * report already carries `@page` rules, so the browser produces the same
- * document with nothing installed, identically in every deployment.
+ * HTML report carries `@page` rules, so the browser prints the same document
+ * with nothing installed, identically in every deployment.
  */
-export function reportPrintUrl(id) {
-  return apiUrl(`/api/captures/${id}/report.html?print=1`)
+export async function fetchReport(id, format) {
+  const res = await fetchWithAuth(`/api/captures/${id}/report.${format}`)
+  if (!res.ok) await json(res) // throws with the server's message
+  return res.blob()
 }
 
 /*

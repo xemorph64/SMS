@@ -246,7 +246,10 @@ export default function Dashboard() {
             <tbody>
               {(r.assets || []).map((a) => (
                 <tr key={a.key} className="border-b border-hair/60 last:border-0 hover:bg-carbon-3/60">
-                  <td className="px-5 py-3 font-code text-[12.5px] text-bone">{a.host}:{a.port}</td>
+                  <td className="px-5 py-3 font-code text-[12.5px] text-bone">
+                    {a.host}:{a.port}
+                    {a.key && a.key !== `${a.host}:${a.port}` && <div className="text-[11px] text-smoke">{a.key}</div>}
+                  </td>
                   <td className="px-5 py-3 text-ash">{String(a.protocol || '').toUpperCase()}</td>
                   <td className="px-5 py-3"><Tag tone={a.role === 'mta_relay' ? 'muted' : 'gold'}>{a.role === 'mta_relay' ? 'relay' : 'submission'}</Tag></td>
                   <td className="px-5 py-3">
