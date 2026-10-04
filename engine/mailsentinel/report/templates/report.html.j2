@@ -34,25 +34,6 @@
     --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
 
-  @media print {
-    :root {
-      --bg: #ffffff;
-      --surface: #ffffff;
-      --surface-2: #f8f9fa;
-      --surface-3: #eeeeee;
-      --border: #dddddd;
-      --border-hl: #cccccc;
-      --text-main: #000000;
-      --text-muted: #555555;
-    }
-    body { display: block !important; }
-    .sidebar { display: none !important; }
-    .main-content { margin: 0 !important; width: 100% !important; padding: 0 !important; }
-    .search-input { display: none !important; }
-    .card { page-break-inside: avoid; margin-bottom: 20px; }
-    @page { margin: 15mm; }
-  }
-
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text-main);
@@ -153,10 +134,40 @@
   .note { border: 1px solid var(--border); border-left: 4px solid var(--high); background: var(--high-soft); padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 14px; }
   
   pre { font-family: var(--font-mono); font-size: 12px; line-height: 1.6; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; }
+  @media print {
+    :root {
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-2: #f8f9fa;
+      --surface-3: #eeeeee;
+      --border: #dddddd;
+      --border-hl: #cccccc;
+      --text-main: #000000;
+      --text-muted: #555555;
+    }
+    body { display: block !important; }
+    .sidebar { display: none !important; }
+    .main-content { margin: 0 !important; width: 100% !important; padding: 0 !important; }
+    .search-input { display: none !important; }
+    .card { margin-bottom: 20px; }
+    .finding, .kpi-card, .chart-container, tr { break-inside: avoid; }
+    h2, h3, h4 { break-after: avoid; }
+    .kpi-grid { display: flex; gap: 10px; }
+    .kpi-card { flex: 1; }
+    .kpi-card { padding: 12px; }
+    .kpi-val { font-size: 28px; }
+    .chart-grid { display: block; }
+    .table-wrap { overflow: visible; }
+    th, td { padding: 6px 8px; white-space: normal; font-size: 11px; }
+    td.mono { word-break: break-word; }
+    @page { size: A4; margin: 15mm; }
+  }
+
 </style>
 </head>
 <body>
 
+{% macro tone(letter) %}{{ 'critical' if letter in ['F','E'] else 'high' if letter in ['D','C'] else 'medium' if letter == 'B' else 'ok' }}{% endmacro %}
 <div class="sidebar">
   <div class="brand">SECUREMAILSCOPE</div>
   <div class="nav-menu">
@@ -186,8 +197,8 @@
   {% endif %}
 
   <div class="kpi-grid">
-    <div class="kpi-card highlight">
-      <div class="kpi-val">{{ r.overall_grade }}</div>
+    <div class="kpi-card">
+      <div class="kpi-val" style="color: var(--{{ {'critical':'crit','high':'high','medium':'med','ok':'ok'}[tone(r.overall_grade)] }})">{{ r.overall_grade }}</div>
       <div class="kpi-lbl">Overall Grade</div>
     </div>
     <div class="kpi-card">
@@ -249,7 +260,7 @@
           <div class="bar-col">
             <span class="bar-val">{{ count }}</span>
             <div class="bar-track">
-              <div class="bar-fill" style="height: {{ height }}%; background: {% if letter in ['A+','A','B'] %}var(--ok){% elif letter in ['C','D'] %}var(--high){% else %}var(--crit){% endif %}"></div>
+              <div class="bar-fill" style="height: {{ height }}%; background: {% if letter in ['A+','A'] %}var(--ok){% elif letter == 'B' %}var(--med){% elif letter in ['C','D'] %}var(--high){% else %}var(--crit){% endif %}"></div>
             </div>
             <span class="bar-lbl">{{ letter }}</span>
           </div>
@@ -276,13 +287,13 @@
       <tbody>
       {% for a in r.assets %}
         <tr>
-          <td class="mono"><b>{{ a.host }}:{{ a.port }}</b></td>
+          <td class="mono"><b>{{ a.host }}:{{ a.port }}</b>{% if a.key != a.host ~ ':' ~ a.port %}<br><span class="muted" style="font-size:11px">{{ a.key }}</span>{% endif %}</td>
           <td class="mono">{{ a.protocol }}<br><span class="muted" style="font-size:11px">{{ a.role }}</span></td>
           <td>
-            <span class="pill s-{{ 'critical' if a.grade.letter in ['F','E'] else 'high' if a.grade.letter in ['D','C'] else 'info' }}">{{ a.grade.letter }}</span>
+            <span class="pill s-{{ tone(a.grade.letter) }}">{{ a.grade.letter }}</span>
             {% if not a.grade.trusted %}<span class="pill s-low" style="margin-left:6px">Untrusted</span>{% endif %}
           </td>
-          <td class="mono">{{ "%.2f"|format(a.grade.raw_score) }}</td>
+          <td class="mono">{{ "%.2f"|format(a.grade.raw_score) }}{% if a.grade.capped_by %}<br><span class="muted" style="font-size:11px">capped by {{ a.grade.capped_by }}</span>{% endif %}</td>
           <td class="mono">{% if a.best_tls %}{{ a.worst_tls }}{% if a.version_spread %} → {{ a.best_tls }}{% endif %}{% else %}<span class="muted">None</span>{% endif %}</td>
           <td class="mono">{{ a.session_count }}</td>
           <td class="mono">{{ "%.2f"|format(a.exposure_score) }}</td>
@@ -309,7 +320,7 @@
         <tr>
           <td><span class="pill s-{{ m.severity }}">{{ m.severity }}</span></td>
           <td>
-            <div style="font-weight:600; margin-bottom:4px; color:var(--text-main)">{{ m.title }}</div>
+            <div style="font-weight:600; font-size:14px; margin-bottom:4px; color:var(--text-main)">{{ m.title }}</div>
             <div class="mono muted" style="margin-bottom:8px">{{ m.rule_id }} · {{ m.standard }}</div>
             <div style="font-size:13px">{{ m.action }}</div>
           </td>
@@ -327,8 +338,8 @@
   {% for s in r.sessions %}
   <div class="card">
     <h3 style="margin-top:0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-      <span>Session #{{ s.tcp_stream }} · {{ s.protocol|upper }} over {{ s.tls_mode }}</span>
-      <span class="pill s-{{ 'critical' if s.grade.letter in ['F','E'] else 'high' if s.grade.letter in ['D','C'] else 'info' }}" style="font-size:14px">{{ s.grade.letter }}</span>
+      <span>Session #{{ s.tcp_stream }} · {{ s.protocol|upper }} · {{ {'implicit':'implicit TLS','starttls':'STARTTLS','cleartext':'no encryption'}.get(s.tls_mode, s.tls_mode) }}{% if s.server_name %} · {{ s.server_name }}{% endif %}</span>
+      <span class="pill s-{{ tone(s.grade.letter) }}" style="font-size:14px">{{ s.grade.letter }}</span>
     </h3>
     
     <div class="mono muted" style="margin-bottom:20px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
@@ -348,7 +359,7 @@
             <td class="muted">Subject</td><td class="mono" style="max-width:200px; overflow-wrap:break-word;">{{ s.chain[0].subject if s.chain else '—' }}</td>
           </tr>
           <tr>
-            <td class="muted">Key Exchange</td><td class="mono">{{ s.kex or '—' }}{% if s.kex_bits %} ({{ s.kex_bits }}b){% endif %}</td>
+            <td class="muted">Key Exchange</td><td class="mono">{{ s.kex or '—' }}{% if s.kex_bits %} (≈{{ s.kex_bits }}-bit RSA strength){% endif %}</td>
             <td class="muted">Issuer</td><td class="mono" style="max-width:200px; overflow-wrap:break-word;">{{ s.chain[0].issuer if s.chain else '—' }}</td>
           </tr>
           <tr>
@@ -357,7 +368,11 @@
             <td>
               {% if s.chain %}
                 {% if s.chain[0].expired_at_capture %}<span class="pill s-critical">Expired</span>
-                {% else %}<span class="pill s-ok">Valid</span>{% endif %}
+                {% elif s.chain[0].not_yet_valid_at_capture %}<span class="pill s-critical">Not yet valid</span>
+                {% elif s.chain[0].self_signed %}<span class="pill s-high">Self-signed</span>
+                {% elif not s.chain_valid %}<span class="pill s-high">Untrusted chain</span>
+                {% elif not s.name_match %}<span class="pill s-high">Name mismatch</span>
+                {% else %}<span class="pill s-ok">Trusted</span>{% endif %}
               {% else %}<span class="mono muted">—</span>{% endif %}
             </td>
           </tr>
@@ -389,9 +404,9 @@
     {% endfor %}
 
     {% if s.ml %}
-    <h4 style="margin:24px 0 10px;">AI Anomaly Assessment</h4>
+    <h4 style="margin:24px 0 10px;">Model estimate (advisory — the grade above comes from the rules)</h4>
     <div class="mono muted" style="margin-bottom: 12px;">
-      Posture: {{ s.ml.risk_class }} | Risk Score: {{ "%.2f"|format(s.ml.risk_score) }} | Anomaly: {{ 'Yes' if s.ml.anomaly else 'No' }}
+      Posture: {{ s.ml.risk_class }} | Confidence: {{ "%.0f"|format((s.ml.class_probabilities[s.ml.risk_class] or 0) * 100) }}% | P(critical): {{ "%.0f"|format((s.ml.risk_score or 0) * 100) }}% | Anomalous traffic: {{ 'Yes' if s.ml.anomaly else 'No' }}
     </div>
     <p style="font-size:14px; color:var(--text-main);">{{ s.ml.explanation }}</p>
     {% endif %}

@@ -95,8 +95,9 @@ def cmd_render(args: argparse.Namespace) -> int:
                 with open(args.pdf, "wb") as fh:
                     fh.write(pdf_bytes)
                 print(f"wrote {args.pdf}", file=sys.stderr)
-        except ImportError:
-            print("warning: weasyprint is not installed, cannot generate PDF", file=sys.stderr)
+        except (ImportError, OSError) as exc:
+            # OSError: weasyprint is installed but Pango/cairo are not.
+            print(f"error: PDF needs `pip install mailsentinel[pdf]` plus Pango: {exc}", file=sys.stderr)
             return 2
     return 0
 
