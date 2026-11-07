@@ -1,8 +1,8 @@
-# MailSentinel
+# SecureMailScope
 
-**MailSentinel** is an advanced, offline, passive cryptographic posture assessment engine engineered for modern enterprise email infrastructures. By ingesting network packet captures (PCAP/PCAPNG) of SMTP, IMAP, and POP3 traffic, MailSentinel reconstructs negotiated TLS sessions to thoroughly evaluate cryptographic health, cipher strength, certificate validity, and protocol behaviors.
+**SecureMailScope** is an advanced, offline, passive cryptographic posture assessment engine engineered for modern enterprise email infrastructures. By ingesting network packet captures (PCAP/PCAPNG) of SMTP, IMAP, and POP3 traffic, SecureMailScope reconstructs negotiated TLS sessions to thoroughly evaluate cryptographic health, cipher strength, certificate validity, and protocol behaviors.
 
-Unlike active vulnerability scanners that probe a server for capabilities it claims to support, MailSentinel observes the reality of what your infrastructure *actually* negotiates with real-world clients in production.
+Unlike active vulnerability scanners that probe a server for capabilities it claims to support, SecureMailScope observes the reality of what your infrastructure *actually* negotiates with real-world clients in production.
 
 ---
 
@@ -10,7 +10,7 @@ Unlike active vulnerability scanners that probe a server for capabilities it cla
 
 Email remains critical infrastructure. Despite widespread TLS adoption, SMTP, IMAP, and POP3 deployments still suffer from obsolete TLS versions, weak ciphers, insecure STARTTLS implementations, and bad certificates, exposing them to downgrade and MITM attacks. Existing network analysis tools give packet-level visibility but do not automatically assess cryptographic posture or give risk-prioritized guidance.
 
-MailSentinel is an AI-assisted passive network forensic framework that automatically assesses the cryptographic security posture of enterprise email infrastructure. It reconstructs sessions, identifies encryption transitions, analyzes TLS negotiations, validates certificates, detects weaknesses, and uses Machine Learning to classify risk and detect anomalous behavior.
+SecureMailScope is an AI-assisted passive network forensic framework that automatically assesses the cryptographic security posture of enterprise email infrastructure. It reconstructs sessions, identifies encryption transitions, analyzes TLS negotiations, validates certificates, detects weaknesses, and uses Machine Learning to classify risk and detect anomalous behavior.
 
 ## Core Capabilities
 
@@ -25,7 +25,7 @@ MailSentinel is an AI-assisted passive network forensic framework that automatic
 
 ## 2. Architecture
 
-MailSentinel is built using a decoupled, highly scalable three-tier architecture:
+SecureMailScope is built using a decoupled, highly scalable three-tier architecture:
 
 ```mermaid
 flowchart TD
@@ -52,7 +52,7 @@ flowchart TD
 ## 3. Analysis Pipeline
 
 ### A. TCP Stream Reconstruction
-MailSentinel groups packets by their 5-tuple, reorders by sequence number, and handles retransmissions and fragmentation. It identifies the client and server roles authoritatively based on the TCP SYN direction or standard port heuristics.
+SecureMailScope groups packets by their 5-tuple, reorders by sequence number, and handles retransmissions and fragmentation. It identifies the client and server roles authoritatively based on the TCP SYN direction or standard port heuristics.
 
 ### B. Protocol & STARTTLS Analysis
 The engine parses SMTP, IMAP, and POP3 command states. It evaluates STARTTLS transitions across six distinct states:
@@ -63,16 +63,16 @@ The engine parses SMTP, IMAP, and POP3 command states. It evaluates STARTTLS tra
 5. `IMPLICIT_TLS`
 6. `STRIPPED_SUSPICIOUS`
 
-**STARTTLS Command Injection:** MailSentinel inspects raw TCP segment boundaries around the client's `STARTTLS` command and the server's affirmative response. If extra bytes are pipelined in the same segment before the TLS handshake begins, it flags a High-Severity injection vulnerability.
+**STARTTLS Command Injection:** SecureMailScope inspects raw TCP segment boundaries around the client's `STARTTLS` command and the server's affirmative response. If extra bytes are pipelined in the same segment before the TLS handshake begins, it flags a High-Severity injection vulnerability.
 
 ### C. TLS & Cipher Suite Analysis
-MailSentinel parses negotiated TLS versions and cipher suites, mapping them to normalized cryptographic schemas:
+SecureMailScope parses negotiated TLS versions and cipher suites, mapping them to normalized cryptographic schemas:
 - **Key Exchange:** Checks for ephemeral forward secrecy (ECDHE/DHE).
 - **Encryption Mode:** Identifies AEAD vs. legacy CBC modes.
 - **TLS 1.3 Nuance:** In TLS 1.3, certificates are encrypted by design. The engine explicitly notes `TLS13_CERT_NOT_OBSERVABLE` rather than asserting false missing-certificate vulnerabilities.
 
 ### D. Certificate Analysis
-Using the `cryptography` Python library, MailSentinel extracts the Subject, Issuer, SANs, Validity boundaries, Key algorithms, and Signature hashes. It validates the chain against bundled trust stores to classify certificates as `VALID`, `EXPIRED`, `SELF_SIGNED`, `HOSTNAME_MISMATCH`, or `WEAK_KEY`.
+Using the `cryptography` Python library, SecureMailScope extracts the Subject, Issuer, SANs, Validity boundaries, Key algorithms, and Signature hashes. It validates the chain against bundled trust stores to classify certificates as `VALID`, `EXPIRED`, `SELF_SIGNED`, `HOSTNAME_MISMATCH`, or `WEAK_KEY`.
 
 ---
 
@@ -96,7 +96,7 @@ Every finding is evaluated against a deterministic, citation-backed rule engine.
 
 ## 5. Machine Learning & AI
 
-MailSentinel uses Machine Learning specifically for **Anomaly Detection**, never to replace deterministic rules.
+SecureMailScope uses Machine Learning specifically for **Anomaly Detection**, never to replace deterministic rules.
 
 - **Isolation Forest (Unsupervised):** Flags sessions that exhibit anomalous structural behavior that deterministic rules might not yet penalize. It calculates a path-length anomaly score without requiring labeled "normal" traffic.
 - **Random Forest (Supervised):** A lightweight classifier trained to approximate and generalize risk classes, aiding in the prioritization of findings for SOC analysts.
@@ -105,7 +105,7 @@ MailSentinel uses Machine Learning specifically for **Anomaly Detection**, never
 
 ## 6. Installation & Setup (Dockerized)
 
-MailSentinel is now fully containerized. You do not need to install Python, Java, or Node.js locally on your host machine to run the platform.
+SecureMailScope is now fully containerized. You do not need to install Python, Java, or Node.js locally on your host machine to run the platform.
 
 ### Quick Start with Docker Compose
 
@@ -153,7 +153,7 @@ Then set `VITE_API_BASE_URL` to the printed service URL in the Vercel project (R
 
 ## 8. Limitations & Future Work
 
-- **Passive Visibility Limitations:** MailSentinel can only assess recorded traffic. Missing packets or encrypted TLS 1.3 certificates limit available checks. A clean grade indicates no *observed* vulnerabilities.
+- **Passive Visibility Limitations:** SecureMailScope can only assess recorded traffic. Missing packets or encrypted TLS 1.3 certificates limit available checks. A clean grade indicates no *observed* vulnerabilities.
 - **Revocation Checking:** OCSP/CRL freshness is not reliably knowable from a passive capture without also capturing the active OCSP traffic.
 - **Future Scope:** SNI-to-cert matching at full rigor (MTA-STS/DANE), persistent cross-scan organizational trend dashboards, and JA3/JA4-based client fingerprinting.
 

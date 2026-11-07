@@ -1,6 +1,6 @@
 # Classic UI (archived)
 
-The original MailSentinel interface (matrix-green terminal look), kept for reference only.
+The original SecureMailScope interface (matrix-green terminal look), kept for reference only.
 It is **not built or served**: Vite and Tailwind only read `frontend/src/`, which now contains
 the SIGNAL interface alone.
 

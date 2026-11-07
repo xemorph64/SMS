@@ -34,7 +34,7 @@ public class EngineClient {
     }
     private List<String> command(String... args) {
         List<String> command = new ArrayList<>(properties.pythonCommand());
-        command.add("-m"); command.add("mailsentinel.cli"); command.addAll(List.of(args)); return command;
+        command.add("-m"); command.add("securemailscope.cli"); command.addAll(List.of(args)); return command;
     }
     private byte[] run(List<String> command, byte[] input, long timeout, Consumer<String> progress, BooleanSupplier cancelled) {
         Process process;
@@ -100,7 +100,7 @@ public class EngineClient {
     }
     public EngineStatus probe() {
         List<String> cmd = new ArrayList<>(properties.pythonCommand());
-        cmd.add("-c"); cmd.add("import sys;import mailsentinel.pipeline;print('1.1.0');print(sys.version.split()[0]);print(sys.executable)");
+        cmd.add("-c"); cmd.add("import sys;import securemailscope.pipeline;print('1.1.0');print(sys.version.split()[0]);print(sys.executable)");
         try {
             String[] out = new String(run(cmd, null, 30, s -> {}, () -> false), StandardCharsets.UTF_8).trim().split("\\R");
             return new EngineStatus(true, out[0], null, out[1], out[2]);

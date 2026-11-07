@@ -1,5 +1,5 @@
 """
-MailSentinel — the frozen data contract.
+SecureMailScope — the frozen data contract.
 
 Every stage of the pipeline reads and writes these objects and nothing else.
 The rules of the contract:

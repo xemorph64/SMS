@@ -30,7 +30,7 @@ export default function ExportPage() {
   }, [id, loaded, setReport])
 
   const [busy, setBusy] = useState(null)
-  const base = `mailsentinel-${(report?.report?.capture?.filename || `capture-${id}`).replace(/\.[^.]+$/, '')}`
+  const base = `securemailscope-${(report?.report?.capture?.filename || `capture-${id}`).replace(/\.[^.]+$/, '')}`
 
   const download = async (format) => {
     const blob = await fetchReport(id, format)

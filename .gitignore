@@ -36,7 +36,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Generated models; rebuild with scripts/setup.sh or the training CLI
-/engine/mailsentinel/ml/artifacts/
+/engine/securemailscope/ml/artifacts/
 *.joblib
 
 # Runtime data, reports and local working files

@@ -1,6 +1,6 @@
-# MailSentinel: investigation architecture
+# SecureMailScope: investigation architecture
 
-MailSentinel now organizes passive capture analysis into investigations. It preserves
+SecureMailScope now organizes passive capture analysis into investigations. It preserves
 observed evidence, keeps deterministic findings separate from model estimates, records
 visibility limits, and compares repeated observations without claiming an unseen problem
 has been fixed.
@@ -224,7 +224,7 @@ flowchart LR
 is disabled except loopback. It produces cleartext/TLS 1.2/TLS 1.3 sessions, with three
 batches per protocol/configuration and a manifest of known configuration labels.
 
-`mailsentinel.ml.captured_dataset` runs the application parser on each manifest capture
+`securemailscope.ml.captured_dataset` runs the application parser on each manifest capture
 and emits JSONL rows with features, independently provided labels, configuration groups,
 evidence hashes and a deterministic baseline class. Duplicate evidence and cross-group
 capture reuse are rejected. `ml.train --dataset ... --artifacts ...` uses grouped evaluation

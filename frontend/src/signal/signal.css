@@ -239,6 +239,40 @@ body {
   animation: sg-marquee 40s linear infinite;
 }
 
+/* ----------------------------------------------------------------------
+ * ForensicFlow canvas (analysis-run visualization). Pure CSS vocabulary —
+ * opacity/transform only, so they run on the compositor and stay cheap.
+ * The global 'prefers-reduced-motion' rule above collapses every one of them
+ * to a sensible static end state; nothing here needs JavaScript.
+ * ------------------------------------------------------------------- */
+@keyframes ff-illum {
+  0%, 100% { opacity: 0.18; }
+  45% { opacity: 1; }
+}
+@keyframes ff-scan {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(760%); }
+}
+@keyframes ff-assemble {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes ff-node {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+.ff-illum { animation: ff-illum 2.7s ease-in-out infinite; }
+.ff-scan { animation: ff-scan 2.3s linear infinite; }
+.ff-assemble { animation: ff-assemble 0.55s ease-out both; }
+.ff-node { animation: ff-node 1.3s ease-in-out infinite; }
+
+/* Freeze every canvas motion once a run reaches a terminal state. */
+.ff-freeze *,
+.ff-freeze *::before,
+.ff-freeze *::after {
+  animation-play-state: paused !important;
+}
+
 /* cmdk palette */
 [cmdk-item][data-selected='true'] {
   background: rgb(var(--s-carbon-4));

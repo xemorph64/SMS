@@ -26,7 +26,7 @@ export default function ExportPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `mailsentinel-${report.report?.capture?.filename || 'report'}.json`;
+      a.download = `securemailscope-${report.report?.capture?.filename || 'report'}.json`;
       a.click();
       window.URL.revokeObjectURL(url);
     } catch (err) {

@@ -1,4 +1,4 @@
--- MailSentinel initial schema.
+-- SecureMailScope initial schema.
 --
 -- Deliberately plain SQL: identity columns and portable types only, so the same
 -- migration runs on PostgreSQL and on H2 in PostgreSQL-compatibility mode.  The

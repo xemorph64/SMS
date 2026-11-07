@@ -1,16 +1,16 @@
 """
 The engine's process boundary — not a user interface.
 
-The web UI is the only interface to MailSentinel. This module exists so the
+The web UI is the only interface to SecureMailScope. This module exists so the
 Spring Boot backend can run the analysis out-of-process, which is a deliberate
 containment choice: a malformed capture that crashes a parser takes down a
 subprocess, not the API.
 
 Exactly three commands, and each maps to something the backend does:
 
-    python -m mailsentinel.cli analyse <pcap> --json -     upload  -> report
-    python -m mailsentinel.cli render - --html -           report  -> HTML
-    python -m mailsentinel.ml.train                        build the model
+    python -m securemailscope.cli analyse <pcap> --json -     upload  -> report
+    python -m securemailscope.cli render - --html -           report  -> HTML
+    python -m securemailscope.ml.train                        build the model
 
 There used to be a human-facing side to this — a formatted summary, a rule
 lister, ``--fail-on-critical``, flags to write files. All of it duplicated what
@@ -73,7 +73,7 @@ def cmd_render(args: argparse.Namespace) -> int:
         print(f"not a JSON report: {exc}", file=sys.stderr)
         return 2
     if not isinstance(document, dict) or "sessions" not in document:
-        print("not a MailSentinel report: no 'sessions' key", file=sys.stderr)
+        print("not a SecureMailScope report: no 'sessions' key", file=sys.stderr)
         return 2
 
     html = html_report.render_document(document)
@@ -97,7 +97,7 @@ def cmd_render(args: argparse.Namespace) -> int:
                 print(f"wrote {args.pdf}", file=sys.stderr)
         except (ImportError, OSError) as exc:
             # OSError: weasyprint is installed but Pango/cairo are not.
-            print(f"error: PDF needs `pip install mailsentinel[pdf]` plus Pango: {exc}", file=sys.stderr)
+            print(f"error: PDF needs `pip install securemailscope[pdf]` plus Pango: {exc}", file=sys.stderr)
             return 2
     return 0
 
@@ -130,7 +130,7 @@ def cmd_train(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="mailsentinel",
+        prog="securemailscope",
         description="Passive cryptographic posture assessment for SMTP/IMAP/POP3 from PCAP.",
     )
     sub = p.add_subparsers(dest="command", required=True)

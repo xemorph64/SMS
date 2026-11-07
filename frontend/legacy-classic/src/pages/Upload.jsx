@@ -105,7 +105,7 @@ export default function Upload() {
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
             <Notice tone="warn" title="The API is not running" className="mb-6 shadow-sm">
               Start it with <code className="font-mono text-[12.5px] bg-warn/10 border border-warn/20 px-1.5 py-0.5 rounded">docker compose up</code>, or{' '}
-              <code className="font-mono text-[12.5px] bg-warn/10 border border-warn/20 px-1.5 py-0.5 rounded">java -jar backend/target/mailsentinel-1.0.0.jar</code>{' '}
+              <code className="font-mono text-[12.5px] bg-warn/10 border border-warn/20 px-1.5 py-0.5 rounded">java -jar backend/target/securemailscope-1.0.0.jar</code>{' '}
               from the project root. This page will work as soon as it answers.
             </Notice>
           </motion.div>

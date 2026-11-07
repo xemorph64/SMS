@@ -239,7 +239,7 @@ def train_and_save(
 def main() -> None:  # pragma: no cover - CLI helper
     import argparse
 
-    ap = argparse.ArgumentParser(description="Train the MailSentinel posture model")
+    ap = argparse.ArgumentParser(description="Train the SecureMailScope posture model")
     ap.add_argument("--artifacts", default=DEFAULT_ARTIFACT_DIR)
     ap.add_argument("--dataset", help="Captured-session JSONL; writes a candidate to --artifacts, never auto-promotes")
     ap.add_argument("--profiles", type=int, default=260)

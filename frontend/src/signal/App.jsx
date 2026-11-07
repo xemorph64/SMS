@@ -94,7 +94,7 @@ function useSpotlight() {
 /**
  * Live status line. Static (not a marquee) so it can always be read.
  */
-function Ticker({ health, incidents }) {
+function Ticker({ health, waking, incidents }) {
   const detected = incidents.filter((i) => i.status === 'DETECTED').length
   const escalated = incidents.filter((i) => i.status === 'ESCALATED').length
   const gate = incidents.filter((i) => i.status === 'AWAITING_AUDIT').length
@@ -102,7 +102,9 @@ function Ticker({ health, incidents }) {
     i.certInClockDeadline && new Date(i.certInClockDeadline).getTime() < Date.now() &&
     (i.status === 'ESCALATED' || i.status === 'AWAITING_AUDIT')).length
   const engineUp = health?.status === 'UP'
-  const engine = !health ? 'Connecting…' : engineUp ? `Engine online${health.engineVersion ? ` ${health.engineVersion}` : ''}` : health.reachable ? 'Engine degraded' : 'API offline'
+  const engine = !health
+    ? (waking ? 'Waking the engine · first launch takes ~1–2 min' : 'Connecting…')
+    : engineUp ? `Engine online${health.engineVersion ? ` ${health.engineVersion}` : ''}` : health.reachable ? 'Engine degraded' : 'API offline'
   const Dot = ({ c }) => <span className="h-1.5 w-1.5 rounded-full" style={{ background: `rgb(var(--s-${c}))` }} />
   return (
     <div className="overflow-hidden border-t border-hair bg-carbon/60">
@@ -145,7 +147,7 @@ function ScanWipe({ trigger }) {
  * screen-reader friendly) and a content column with a compact top bar.
  * On phones the sidebar becomes an overlay drawer.
  */
-function Shell({ health, children }) {
+function Shell({ health, waking, children }) {
   const [theme, setTheme] = useTheme()
   const [palette, setPalette] = useState(false)
   const [drawer, setDrawer] = useState(false)
@@ -286,7 +288,7 @@ function Shell({ health, children }) {
                 </Link>
               </div>
             </div>
-            <Ticker health={health} incidents={incidents} />
+            <Ticker health={health} waking={waking} incidents={incidents} />
           </header>
 
           <main className="relative min-w-0 flex-1 px-5 pb-24 pt-8 sm:px-7">
@@ -325,6 +327,10 @@ function NotFound() {
 export default function App() {
   const [report, setReport] = useState(null)
   const [health, setHealth] = useState(null)
+  // True while probes are failing inside the wake window: the instance is
+  // (probably) cold-starting, not unreachable. The ticker phrases it as a
+  // promise, not a failure.
+  const [waking, setWaking] = useState(false)
   const { pathname } = useLocation()
 
   // Auth: JWT in localStorage under 'sms-token'.
@@ -361,11 +367,13 @@ export default function App() {
       if (cancelled) return
       if (h.reachable) {
         miss = 0
+        setWaking(false)
         setHealth(h)
         timer = setTimeout(probe, POLL_MS)
         return
       }
       miss += 1
+      setWaking(miss <= WAKE_DELAYS.length)
       setHealth(miss > WAKE_DELAYS.length ? h : null)
       timer = setTimeout(probe, miss <= WAKE_DELAYS.length ? WAKE_DELAYS[miss - 1] : POLL_MS)
     }
@@ -444,7 +452,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           ) : (
-            <Shell health={health}>{routes}</Shell>
+            <Shell health={health} waking={waking}>{routes}</Shell>
           )}
         </HeatProvider>
       </ReportContext.Provider>

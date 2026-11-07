@@ -40,7 +40,7 @@ frontend/node
 **/.coverage*
 **/htmlcov
 **/coverage
-engine/mailsentinel/ml/artifacts
+engine/securemailscope/ml/artifacts
 **/*.joblib
 
 # Local evidence, exports, configuration and secrets

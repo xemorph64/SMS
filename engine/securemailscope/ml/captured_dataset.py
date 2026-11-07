@@ -1,5 +1,5 @@
 """Extract features from captured traffic, with labels supplied by lab ground truth.
-Usage: python -m mailsentinel.ml.captured_dataset manifest.json dataset.jsonl
+Usage: python -m securemailscope.ml.captured_dataset manifest.json dataset.jsonl
 """
 import argparse
 import json

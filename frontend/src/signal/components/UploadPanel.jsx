@@ -67,7 +67,7 @@ export default function UploadPanel() {
       {health && !health.reachable && (
         <Notice tone="warn" title="The API is not running">
           Start it with <code className="font-code text-bone">docker compose up</code>, or{' '}
-          <code className="font-code text-bone">java -jar backend/target/mailsentinel-1.0.0.jar</code> from the project root.
+          <code className="font-code text-bone">java -jar backend/target/securemailscope-1.0.0.jar</code> from the project root.
           This page works as soon as it answers.
         </Notice>
       )}

@@ -12,9 +12,9 @@
   </parent>
 
   <groupId>in.gov.ntro.sih</groupId>
-  <artifactId>mailsentinel</artifactId>
+  <artifactId>securemailscope</artifactId>
   <version>1.0.0</version>
-  <name>MailSentinel</name>
+  <name>SecureMailScope</name>
   <description>Passive PCAP-based cryptographic security posture assessment for SMTP/IMAP/POP3</description>
 
   <properties>
@@ -107,7 +107,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
-          <mainClass>in.gov.ntro.sih.ms.MailSentinelApplication</mainClass>
+          <mainClass>in.gov.ntro.sih.ms.SecureMailScopeApplication</mainClass>
         </configuration>
       </plugin>
       <plugin>

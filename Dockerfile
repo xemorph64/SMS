@@ -54,13 +54,13 @@ COPY scripts/setup.sh /app/scripts/setup.sh
 # Drop any model committed to the repo before installing: setup.sh trains one
 # against the scikit-learn resolved *here*, and two artifacts built by two
 # different versions is exactly the ambiguity this image should not contain.
-RUN rm -rf /app/engine/mailsentinel/ml/artifacts
+RUN rm -rf /app/engine/securemailscope/ml/artifacts
 
 # Install and train the model without running sample analyses or test suites.
 # Tests run explicitly in development/CI against isolated databases.
 RUN PIP_NO_CACHE_DIR=1 bash /app/scripts/setup.sh --venv /opt/venv --quiet --skip-smoke-test
 
-COPY --from=backend /build/target/*.jar /app/mailsentinel.jar
+COPY --from=backend /build/target/*.jar /app/securemailscope.jar
 
 RUN useradd --system --uid 10001 --create-home sms \
  && mkdir -p /app/data/uploads \
@@ -78,4 +78,4 @@ ENV SMS_PYTHON=/opt/venv/bin/python \
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s \
   CMD ["sh", "-c", "curl -fsS http://localhost:8080/api/health || exit 1"]
 
-ENTRYPOINT ["java", "-jar", "/app/mailsentinel.jar"]
+ENTRYPOINT ["java", "-jar", "/app/securemailscope.jar"]

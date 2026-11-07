@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mailsentinel"
+name = "securemailscope"
 version = "1.0.0"
 description = "Passive PCAP-based cryptographic security posture assessment for SMTP, IMAP and POP3"
 readme = "README.md"
@@ -35,21 +35,21 @@ ml = [
 # does not use it and prints the HTML report in the browser instead.
 pdf = ["weasyprint>=61.0"]
 dev = ["pytest>=7.4", "pytest-cov>=4.1"]
-all = ["mailsentinel[ml,dev]"]
+all = ["securemailscope[ml,dev]"]
 
 [project.scripts]
-mailsentinel = "mailsentinel.cli:main"
+securemailscope = "securemailscope.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/"
 
 [tool.setuptools.packages.find]
-include = ["mailsentinel*"]
+include = ["securemailscope*"]
 
 [tool.setuptools.package-data]
-"mailsentinel.kb" = ["*.json", "*.yaml"]
-"mailsentinel.report" = ["templates/*.j2"]
-"mailsentinel.ml" = ["artifacts/*.joblib", "artifacts/*.json"]
+"securemailscope.kb" = ["*.json", "*.yaml"]
+"securemailscope.report" = ["templates/*.j2"]
+"securemailscope.ml" = ["artifacts/*.joblib", "artifacts/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

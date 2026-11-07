@@ -1,4 +1,4 @@
-# MailSentinel backend configuration.
+# SecureMailScope backend configuration.
 #
 # The default profile runs on an embedded H2 database in PostgreSQL
 # compatibility mode, so `mvn spring-boot:run` works on a clean machine with no
@@ -7,7 +7,7 @@
 
 spring:
   application:
-    name: mailsentinel
+    name: securemailscope
   datasource:
     url: jdbc:h2:file:./data/smsdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
     driver-class-name: org.h2.Driver

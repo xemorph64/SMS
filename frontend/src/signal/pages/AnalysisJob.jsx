@@ -1,11 +1,9 @@
-import React, { lazy, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Check, Loader2, X, RotateCcw } from 'lucide-react'
+import { Check, X, RotateCcw } from 'lucide-react'
 import { getCapture, cancelRun, retryRun } from '../../lib/api'
-import Scene3D from '../three/Scene3D'
+import ForensicFlow from '../components/ForensicFlow'
 import { Notice, PageHeader, Panel } from '../ui'
-
-const PipelineScene = lazy(() => import('../three/PipelineScene'))
 
 // Engine stage events, in order (same list as the classic job page).
 const STAGES = ['QUEUED', 'STARTING', 'READING', 'REASSEMBLING', 'TLS_AND_CERTIFICATES', 'RULES_AND_COVERAGE', 'ML_ASSESSMENT', 'AGGREGATING', 'HISTORY_COMPARISON', 'COMPLETED']
@@ -24,6 +22,10 @@ const COPY = {
 
 const label = (v) => (v || 'queued').toLowerCase().replaceAll('_', ' ')
 
+// How long the completion summary stays on the canvas before the run hands
+// off to its report — long enough for the evidence readout to be read.
+const COMPLETION_HOLD_MS = 3400
+
 export default function AnalysisJob() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -34,13 +36,26 @@ export default function AnalysisJob() {
   useEffect(() => {
     let stop = false
     let timer
+    // A run that finishes while someone is watching resolves on the canvas for
+    // a moment first. A link opened straight onto a finished run (or a browser
+    // that asks for reduced motion) jumps to the report without the pause.
+    let watched = false
     setJob(null); setError('')
     async function poll() {
       try {
         const data = await getCapture(id)
         if (stop) return
         setJob(data); setError('')
-        if (data.status === 'COMPLETED') { navigate(`/report/${id}`, { replace: true }); return }
+        if (watched || ['PENDING', 'RUNNING'].includes(data.status)) watched = true
+        if (data.status === 'COMPLETED') {
+          const hold = watched && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+          if (hold) {
+            timer = setTimeout(() => { if (!stop) navigate(`/report/${id}`, { replace: true }) }, COMPLETION_HOLD_MS)
+          } else {
+            navigate(`/report/${id}`, { replace: true })
+          }
+          return
+        }
         if (['FAILED', 'CANCELLED'].includes(data.status)) return
       } catch (e) { if (!stop) setError(e.message) }
       if (!stop) timer = setTimeout(poll, 1200)
@@ -77,21 +92,8 @@ export default function AnalysisJob() {
 
       {error && <Notice tone="warn" title="Could not update the run" className="mb-5">{error}</Notice>}
 
-      <Panel className="relative overflow-hidden">
-        <Scene3D className="h-[260px] w-full sm:h-[300px]" camera={{ position: [0, 0.9, 6.4], fov: 40 }}>
-          <PipelineScene stages={SHOWN.length} active={active} failed={terminal} />
-        </Scene3D>
-        <div className="pointer-events-none absolute left-5 top-5 sm:left-6 sm:top-6">
-          <div className="flex items-center gap-2 text-[13px] text-ash" role="status">
-            {terminal ? (
-              <span className="h-2 w-2 rounded-full bg-signal" />
-            ) : (
-              <Loader2 size={14} strokeWidth={2} className="animate-spin text-signal" />
-            )}
-            <span className="capitalize">{terminal ? label(job?.status) : label(job?.stage || job?.status)}</span>
-          </div>
-        </div>
-
+      <Panel>
+        <ForensicFlow job={job} />
         <ol className="grid grid-cols-2 gap-x-4 gap-y-4 border-t border-hair p-5 sm:grid-cols-4 sm:p-6 lg:grid-cols-8">
           {SHOWN.map((s, i) => {
             const idx = STAGES.indexOf(s)
@@ -114,8 +116,9 @@ export default function AnalysisJob() {
       {job?.errorMessage && <Notice tone="crit" title="The engine reported an error" className="mt-5">{job.errorMessage}</Notice>}
 
       <p className="mt-5 text-[13px] leading-relaxed text-smoke">
-        You can leave this page; the server keeps the job and its evidence. Stages reflect real engine events, not an
-        estimated percentage. Retrying keeps this run for the record.
+        You can leave this page; the server keeps the job and its evidence. The canvas and the tracker read the engine's
+        own stage events, not an estimated percentage — counts and findings appear only when the engine publishes them.
+        Retrying keeps this run for the record.
       </p>
       <Link className="mt-3 inline-block text-[13px] text-signal hover:underline" to={job?.investigationId ? `/investigations/${job.investigationId}` : '/investigations'}>
         Back to analysis history

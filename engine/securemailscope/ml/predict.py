@@ -87,7 +87,7 @@ def load_model(model_path: Optional[str] = None) -> dict[str, Any]:
     path = model_path or os.path.join(DEFAULT_ARTIFACT_DIR, "posture_model.joblib")
     if not os.path.exists(path):
         raise ModelUnavailable(
-            f"no trained model at {path} — run `python -m mailsentinel.ml.train`"
+            f"no trained model at {path} — run `python -m securemailscope.ml.train`"
         )
 
     with warnings.catch_warnings():
@@ -99,7 +99,7 @@ def load_model(model_path: Optional[str] = None) -> dict[str, Any]:
         except Exception as exc:
             raise ModelUnavailable(
                 f"the stored model could not be loaded ({exc.__class__.__name__}: {exc}). "
-                f"Retrain it for this environment: python -m mailsentinel.ml.train"
+                f"Retrain it for this environment: python -m securemailscope.ml.train"
             ) from exc
 
     trained_with = bundle.get("sklearn_version")
@@ -108,7 +108,7 @@ def load_model(model_path: Optional[str] = None) -> dict[str, Any]:
             f"the stored model was trained with scikit-learn {trained_with} but this "
             f"environment has {sklearn.__version__}, and scikit-learn pickles are not "
             f"portable across versions. Retrain it — it takes about half a minute and "
-            f"is deterministic: python -m mailsentinel.ml.train"
+            f"is deterministic: python -m securemailscope.ml.train"
         )
     return bundle
 

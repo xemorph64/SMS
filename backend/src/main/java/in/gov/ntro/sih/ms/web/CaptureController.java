@@ -225,7 +225,7 @@ public class CaptureController {
         }
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=\"mailsentinel-" + id + ".json\"")
+                        "attachment; filename=\"securemailscope-" + id + ".json\"")
                 .body(c.getReportJson());
     }
 
@@ -244,7 +244,7 @@ public class CaptureController {
         byte[] body = engine.render(requireReport(id));
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=\"mailsentinel-" + id + ".html\"")
+                        "inline; filename=\"securemailscope-" + id + ".html\"")
                 .contentType(MediaType.TEXT_HTML)
                 .body(body);
     }

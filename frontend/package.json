@@ -1,9 +1,9 @@
 {
-  "name": "mailsentinel-frontend",
+  "name": "securemailscope-frontend",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "MailSentinel analyst dashboard",
+  "description": "SecureMailScope analyst dashboard",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

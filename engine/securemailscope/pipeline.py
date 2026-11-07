@@ -119,7 +119,7 @@ def analyse_capture(
         except ImportError as exc:
             warnings.append(
                 f"Model stage skipped — {exc}. Install the optional model layer with "
-                f"`pip install 'mailsentinel[ml]'`. Every finding and grade above "
+                f"`pip install 'securemailscope[ml]'`. Every finding and grade above "
                 f"comes from the rule engine and is unaffected."
             )
         except Exception as exc:  # advisory only; never fail the analysis

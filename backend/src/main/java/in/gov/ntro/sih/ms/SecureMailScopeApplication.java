@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 /**
- * MailSentinel backend.
+ * SecureMailScope backend.
  *
  * <p>Deliberately thin. Every piece of cryptographic analysis — PCAP parsing,
  * TCP reassembly, TLS handshake dissection, X.509 validation, the rule engine,
@@ -17,11 +17,11 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan
-public class MailSentinelApplication {
+public class SecureMailScopeApplication {
 
     public static void main(String[] args) {
         acceptConnectionStringForm();
-        SpringApplication.run(MailSentinelApplication.class, args);
+        SpringApplication.run(SecureMailScopeApplication.class, args);
     }
 
     /**

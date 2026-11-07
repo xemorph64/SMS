@@ -1,6 +1,6 @@
-# Deploying MailSentinel
+# Deploying SecureMailScope
 
-MailSentinel is three things in one repository — a React dashboard, a Spring
+SecureMailScope is three things in one repository — a React dashboard, a Spring
 Boot API, and a Python analysis engine the API runs as a subprocess. A static
 host such as Vercel can serve the first and nothing else: serverless functions
 cannot run a JVM service that spawns Python processes, and they have no
@@ -31,7 +31,7 @@ Any managed PostgreSQL works; [Neon](https://neon.tech) has a free tier that
 suits a demo. Create a project, then copy the **connection string** — the
 `postgresql://user:pass@host/db?sslmode=require` form, **not** the JDBC one.
 The service translates it; see
-`MailSentinelApplication.acceptConnectionStringForm()`.
+`SecureMailScopeApplication.acceptConnectionStringForm()`.
 
 No schema work is needed. Flyway runs migrations `V1`–`V6` on first boot, and
 `DataInitializer` seeds the five demo accounts the login page lists
@@ -57,7 +57,8 @@ No schema work is needed. Flyway runs migrations `V1`–`V6` on first boot, and
      (`https://*.vercel.app`), and changing it triggers a redeploy by itself.
 4. Render's free tier **sleeps after ~15 minutes of inactivity**; the first
    request after waking costs ~30-60s (JVM + engine import). For a live demo
-   you can bump to a starter plan for always-ready instances.
+   you can bump to a starter plan for always-ready instances, or set up a
+   keep-alive monitor — see [KEEP-ALIVE.md](KEEP-ALIVE.md).
 
 ### Verifying
 

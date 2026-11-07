@@ -1,4 +1,4 @@
-# MailSentinel - common tasks.
+# SecureMailScope - common tasks.
 #
 #   make setup     install the engine and the dashboard's dependencies
 #   make run       build everything and start the application on :8080

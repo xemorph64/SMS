@@ -1,4 +1,4 @@
-# MailSentinel rule base
+# SecureMailScope rule base
 #
 # Every verdict the tool emits is defined here, not in Python.  Each rule
 # carries the published clause it enforces, so a finding in the report can be
